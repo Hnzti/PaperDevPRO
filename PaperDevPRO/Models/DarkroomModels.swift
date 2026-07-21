@@ -257,20 +257,27 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
     }
 
     public func capacityPercent(
-        for paper: Paper,
-        paperSize: PaperSize,
-        completedCycles: Int,
+        usages: [ChemicalUsageEntry],
         workingSolutionLiters: Double
     ) -> Int? {
-        guard let rule = capacityRule(for: paper) else {
+        guard workingSolutionLiters > 0, !capacityRules.isEmpty else {
             return nil
         }
 
-        let capacityArea = rule.squareMetersPerLiter * workingSolutionLiters
-        guard capacityArea > 0 else { return nil }
+        var usedFraction = 0.0
 
-        let usedArea = paperSize.areaSquareMeters * Double(completedCycles)
-        let remainingRatio = max(0, 1 - (usedArea / capacityArea))
+        for usage in usages {
+            guard let rule = capacityRule(for: usage.paperType) else {
+                continue
+            }
+
+            let capacityArea = rule.squareMetersPerLiter * workingSolutionLiters
+            guard capacityArea > 0 else { continue }
+
+            usedFraction += usage.areaSquareMeters / capacityArea
+        }
+
+        let remainingRatio = max(0, 1 - usedFraction)
         return Int((remainingRatio * 100).rounded())
     }
 
@@ -305,8 +312,8 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         )
     }
 
-    private func capacityRule(for paper: Paper) -> ChemicalCapacityRule? {
-        capacityRules.first { $0.paperType == paper.type }
+    private func capacityRule(for paperType: PaperType) -> ChemicalCapacityRule? {
+        capacityRules.first { $0.paperType == paperType }
     }
 
     private func matchingRules(for paper: Paper) -> [ProcessingTimeRule] {
@@ -338,6 +345,16 @@ public struct ChemicalCapacityRule: Codable, Hashable {
     public init(paperType: PaperType, squareMetersPerLiter: Double) {
         self.paperType = paperType
         self.squareMetersPerLiter = squareMetersPerLiter
+    }
+}
+
+public struct ChemicalUsageEntry: Codable, Hashable {
+    public let paperType: PaperType
+    public let areaSquareMeters: Double
+
+    public init(paperType: PaperType, areaSquareMeters: Double) {
+        self.paperType = paperType
+        self.areaSquareMeters = areaSquareMeters
     }
 }
 

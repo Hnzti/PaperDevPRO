@@ -6,6 +6,7 @@ struct SetupView: View {
     @ObservedObject private var presetStore = PresetStore.shared
 
     let initialSession: DevelopmentSession
+    let onResetProject: () -> Void
     let onApply: (DevelopmentSession) -> Void
 
     @State private var selectedPaper: Paper
@@ -28,14 +29,24 @@ struct SetupView: View {
     @State private var isDeveloperTransferSynced = true
     @State private var isStopBathTransferSynced = true
     @State private var isFixerTransferSynced = true
+    @State private var isDeveloperUsageSynced = true
+    @State private var isStopBathUsageSynced = true
+    @State private var isFixerUsageSynced = true
     @State private var phaseDurationOverrides: [ProcessPhase: Int]
     @State private var activePicker: SetupPicker?
+    @State private var isShowingProjectResetConfirmation = false
+    @State private var isShowingSettings = false
 
     private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
     private let dividerColor = Color(red: 1, green: 0, blue: 0).opacity(0.35)
 
-    init(initialSession: DevelopmentSession, onApply: @escaping (DevelopmentSession) -> Void) {
+    init(
+        initialSession: DevelopmentSession,
+        onResetProject: @escaping () -> Void = {},
+        onApply: @escaping (DevelopmentSession) -> Void
+    ) {
         self.initialSession = initialSession
+        self.onResetProject = onResetProject
         self.onApply = onApply
         _selectedPaper = State(initialValue: initialSession.paper)
         _selectedPaperSize = State(initialValue: initialSession.paperSize)
@@ -67,6 +78,7 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     topBar
+                    projectResetButton
 
                     settingsSection(title: "Presety") {
                         pickerRow(
@@ -95,6 +107,18 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedDeveloperDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedDeveloperTemperature).displayText)
                         divider
+                        capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
+                        divider
+                        usageRow(
+                            chemical: selectedDeveloper,
+                            dilution: selectedDeveloperDilution,
+                            isSynced: isDeveloperUsageSynced
+                        ) {
+                            toggleUsageSync(for: .developer)
+                        } onReset: {
+                            resetUsage(for: .developer)
+                        }
+                        divider
                         transferRow(
                             value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)),
                             picker: .transferAfterDeveloper,
@@ -102,10 +126,6 @@ struct SetupView: View {
                         ) {
                             toggleSync(for: .afterDeveloper)
                         }
-                        divider
-                        capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
-                        divider
-                        usageRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
                     }
 
                     settingsSection(title: "Přerušovač") {
@@ -121,6 +141,18 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedStopBathDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedStopBathTemperature).displayText)
                         divider
+                        capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
+                        divider
+                        usageRow(
+                            chemical: selectedStopBath,
+                            dilution: selectedStopBathDilution,
+                            isSynced: isStopBathUsageSynced
+                        ) {
+                            toggleUsageSync(for: .stopBath)
+                        } onReset: {
+                            resetUsage(for: .stopBath)
+                        }
+                        divider
                         transferRow(
                             value: durationText(for: TimeInterval(transferAfterStopBathSeconds)),
                             picker: .transferAfterStopBath,
@@ -128,10 +160,6 @@ struct SetupView: View {
                         ) {
                             toggleSync(for: .afterStopBath)
                         }
-                        divider
-                        capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
-                        divider
-                        usageRow(chemical: selectedStopBath, dilution: selectedStopBathDilution)
                     }
 
                     settingsSection(title: "Ustalovač") {
@@ -147,6 +175,18 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedFixerDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedFixerTemperature).displayText)
                         divider
+                        capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
+                        divider
+                        usageRow(
+                            chemical: selectedFixer,
+                            dilution: selectedFixerDilution,
+                            isSynced: isFixerUsageSynced
+                        ) {
+                            toggleUsageSync(for: .fixer)
+                        } onReset: {
+                            resetUsage(for: .fixer)
+                        }
+                        divider
                         transferRow(
                             value: durationText(for: TimeInterval(transferAfterFixerSeconds)),
                             picker: .transferAfterFixer,
@@ -154,10 +194,6 @@ struct SetupView: View {
                         ) {
                             toggleSync(for: .afterFixer)
                         }
-                        divider
-                        capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
-                        divider
-                        usageRow(chemical: selectedFixer, dilution: selectedFixerDilution)
                     }
 
                     settingsSection(title: "Proces") {
@@ -185,6 +221,24 @@ struct SetupView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsSheetView()
+                .interactiveDismissDisabled()
+        }
+        .confirmationDialog(
+            "Opravdu resetovat celý projekt?",
+            isPresented: $isShowingProjectResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("RESET PROJEKTU", role: .destructive) {
+                onResetProject()
+                dismiss()
+            }
+
+            Button("ZRUŠIT", role: .cancel) { }
+        } message: {
+            Text("Smažou se všechny běžící papíry a projekt se vrátí do výchozího stavu.")
+        }
     }
 
     private var topBar: some View {
@@ -196,15 +250,38 @@ struct SetupView: View {
             Spacer()
 
             Text("Setup")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
 
             Spacer()
 
-            resetButton {
-                resetToDefaults()
+            HStack(spacing: 10) {
+                resetButton {
+                    resetToDefaults()
+                }
+
+                circularIconButton(systemName: "gearshape") {
+                    isShowingSettings = true
+                }
             }
         }
+    }
+
+    private var projectResetButton: some View {
+        Button {
+            isShowingProjectResetConfirmation = true
+        } label: {
+            Text("RESET PROJEKTU")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(DarkroomPalette.red, lineWidth: 2)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private var computedSession: DevelopmentSession {
@@ -437,7 +514,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
 
                 Picker("Teplota", selection: selectedTemperatureBinding) {
@@ -477,7 +554,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
 
                 HStack(spacing: 18) {
@@ -514,7 +591,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
 
                 Picker("Objem", selection: milliliters) {
@@ -554,7 +631,7 @@ struct SetupView: View {
             activePicker = nil
         } label: {
             Text("BUDIŽ")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -578,7 +655,7 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(title)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(DarkroomPalette.red)
                         .padding(.bottom, 6)
 
@@ -603,11 +680,11 @@ struct SetupView: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .bold))
 
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 14, weight: .semibold))
                     }
                 }
 
@@ -630,7 +707,7 @@ struct SetupView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(DarkroomPalette.red)
                 .padding(.leading, 18)
 
@@ -666,12 +743,12 @@ struct SetupView: View {
             } label: {
                 HStack(spacing: 12) {
                     Text("Přendání")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(.system(size: 18, weight: .semibold))
 
                     Spacer(minLength: 16)
 
                     Text(value)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .bold))
 
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .bold))
@@ -685,7 +762,7 @@ struct SetupView: View {
                         .font(.system(size: 14, weight: .bold))
 
                     Text("SYNC")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: 12, weight: .bold))
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 7)
@@ -714,11 +791,8 @@ struct SetupView: View {
     }
 
     private func capacityRow(chemical: Chemical, dilution: ChemicalDilution, totalMilliliters: Int) -> some View {
-        let completedCycles = usageStore.count(for: chemical, dilution: dilution)
         let percent = dilution.capacityPercent(
-            for: selectedPaper,
-            paperSize: selectedPaperSize,
-            completedCycles: completedCycles,
+            usages: usageStore.entries(for: chemical, dilution: dilution),
             workingSolutionLiters: Double(totalMilliliters) / 1_000
         )
 
@@ -728,27 +802,48 @@ struct SetupView: View {
         )
     }
 
-    private func usageRow(chemical: Chemical, dilution: ChemicalDilution) -> some View {
+    private func usageRow(
+        chemical: Chemical,
+        dilution: ChemicalDilution,
+        isSynced: Bool,
+        toggleSync: @escaping () -> Void,
+        onReset: @escaping () -> Void
+    ) -> some View {
         HStack(spacing: 12) {
             Text("Použito")
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 18, weight: .semibold))
 
             Spacer(minLength: 16)
 
             Text("\(usageStore.count(for: chemical, dilution: dilution))x")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold))
 
-            Button {
-                usageStore.reset(chemical: chemical, dilution: dilution)
-            } label: {
+            Button(action: onReset) {
                 Text("RESET")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .overlay(
                         Capsule()
                             .stroke(DarkroomPalette.red, lineWidth: 1)
                     )
+            }
+            .buttonStyle(.plain)
+
+            Button(action: toggleSync) {
+                HStack(spacing: 5) {
+                    Image(systemName: isSynced ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 14, weight: .bold))
+
+                    Text("SYNC")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .overlay(
+                    Capsule()
+                        .stroke(DarkroomPalette.red.opacity(isSynced ? 1 : 0.45), lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
         }
@@ -760,12 +855,12 @@ struct SetupView: View {
     private func rowContent(title: String, value: String, showsChevron: Bool) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 18, weight: .semibold))
 
             Spacer(minLength: 16)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
@@ -802,7 +897,7 @@ struct SetupView: View {
     private func resetButton(action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text("RESET")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(width: 64, height: 56)
                 .background(Capsule().fill(cardColor))
@@ -914,6 +1009,58 @@ struct SetupView: View {
         }
 
         return nil
+    }
+
+    private func toggleUsageSync(for target: UsageSyncTarget) {
+        switch target {
+        case .developer:
+            isDeveloperUsageSynced.toggle()
+        case .stopBath:
+            isStopBathUsageSynced.toggle()
+        case .fixer:
+            isFixerUsageSynced.toggle()
+        }
+    }
+
+    private func resetUsage(for target: UsageSyncTarget) {
+        guard isUsageSynced(target) else {
+            resetUsageChemical(for: target)
+            return
+        }
+
+        if isDeveloperUsageSynced {
+            resetUsageChemical(for: .developer)
+        }
+
+        if isStopBathUsageSynced {
+            resetUsageChemical(for: .stopBath)
+        }
+
+        if isFixerUsageSynced {
+            resetUsageChemical(for: .fixer)
+        }
+    }
+
+    private func resetUsageChemical(for target: UsageSyncTarget) {
+        switch target {
+        case .developer:
+            usageStore.reset(chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+        case .stopBath:
+            usageStore.reset(chemical: selectedStopBath, dilution: selectedStopBathDilution)
+        case .fixer:
+            usageStore.reset(chemical: selectedFixer, dilution: selectedFixerDilution)
+        }
+    }
+
+    private func isUsageSynced(_ target: UsageSyncTarget) -> Bool {
+        switch target {
+        case .developer:
+            return isDeveloperUsageSynced
+        case .stopBath:
+            return isStopBathUsageSynced
+        case .fixer:
+            return isFixerUsageSynced
+        }
     }
 
     private func resetToDefaults() {
@@ -1061,6 +1208,85 @@ private enum TransferSyncTarget {
     case afterFixer
 }
 
+private enum UsageSyncTarget {
+    case developer
+    case stopBath
+    case fixer
+}
+
+private struct SettingsSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+
+    var body: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(spacing: 22) {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .frame(width: 56, height: 56)
+                            .background(Circle().fill(cardColor))
+                            .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    Text("Nastavení")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(DarkroomPalette.red)
+
+                    Spacer()
+
+                    Color.clear
+                        .frame(width: 56, height: 56)
+                }
+
+                VStack(spacing: 0) {
+                    Button {
+                        SystemSettingsOpener.openColorFilters()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text("Červený displej")
+                                .font(.system(size: 18, weight: .bold))
+
+                            Spacer(minLength: 16)
+
+                            Text("Nastavení")
+                                .font(.system(size: 18, weight: .regular))
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .bold))
+                        }
+                        .foregroundStyle(DarkroomPalette.red)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
+                )
+
+                Spacer()
+            }
+            .padding(20)
+        }
+        .preferredColorScheme(.dark)
+        .statusBar(hidden: true)
+    }
+}
+
 private struct PresetsSheetView: View {
     @ObservedObject private var presetStore = PresetStore.shared
     @State private var presetName = ""
@@ -1078,19 +1304,19 @@ private struct PresetsSheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Presety")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(DarkroomPalette.red)
 
                     savePresetSection
 
                     if presetStore.presets.isEmpty {
                         Text("Zatím nemáš uložený žádný preset.")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(DarkroomPalette.red)
                             .padding(.top, 10)
                     } else {
                         Text("Načíst preset")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(DarkroomPalette.red)
                             .padding(.top, 8)
 
@@ -1108,7 +1334,7 @@ private struct PresetsSheetView: View {
     private var savePresetSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Uložit aktuální nastavení")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
 
             TextField("Název presetu", text: $presetName)
@@ -1116,7 +1342,7 @@ private struct PresetsSheetView: View {
                 .textContentType(.name)
                 .autocorrectionDisabled()
                 .submitLabel(.done)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
                 .tint(DarkroomPalette.red)
                 .padding(16)
@@ -1133,7 +1359,7 @@ private struct PresetsSheetView: View {
                 savePreset()
             } label: {
                 Text("ULOŽIT PRESET")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
@@ -1154,10 +1380,10 @@ private struct PresetsSheetView: View {
             } label: {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(preset.name)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .bold))
 
                     Text(preset.session.paper.displayName)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(.system(size: 13, weight: .semibold))
                         .lineLimit(1)
                 }
                 .foregroundStyle(DarkroomPalette.red)
@@ -1169,7 +1395,7 @@ private struct PresetsSheetView: View {
                 presetStore.delete(preset)
             } label: {
                 Text("SMAZAT")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)

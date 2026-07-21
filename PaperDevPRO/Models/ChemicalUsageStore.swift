@@ -5,34 +5,52 @@ import Foundation
 final class ChemicalUsageStore: ObservableObject {
     static let shared = ChemicalUsageStore()
 
-    @Published private(set) var counts: [String: Int]
+    @Published private(set) var usages: [String: [ChemicalUsageEntry]]
 
-    private let userDefaultsKey = "chemicalUsageCounts"
+    private let userDefaultsKey = "chemicalUsageEntries"
+    private let legacyUserDefaultsKey = "chemicalUsageCounts"
     private let defaults: UserDefaults
 
     private init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.counts = defaults.dictionary(forKey: userDefaultsKey) as? [String: Int] ?? [:]
+
+        if let data = defaults.data(forKey: userDefaultsKey),
+           let decoded = try? JSONDecoder().decode([String: [ChemicalUsageEntry]].self, from: data) {
+            self.usages = decoded
+        } else {
+            self.usages = [:]
+        }
+
+        defaults.removeObject(forKey: legacyUserDefaultsKey)
     }
 
     func count(for chemical: Chemical, dilution: ChemicalDilution) -> Int {
-        counts[key(for: chemical, dilution: dilution), default: 0]
+        entries(for: chemical, dilution: dilution).count
+    }
+
+    func entries(for chemical: Chemical, dilution: ChemicalDilution) -> [ChemicalUsageEntry] {
+        usages[key(for: chemical, dilution: dilution), default: []]
     }
 
     func reset(chemical: Chemical, dilution: ChemicalDilution) {
-        counts[key(for: chemical, dilution: dilution)] = 0
+        usages[key(for: chemical, dilution: dilution)] = []
         persist()
     }
 
     func recordCompletedCycle(for session: DevelopmentSession) {
-        increment(chemical: session.developer, dilution: session.developerDilution)
-        increment(chemical: session.stopBath, dilution: session.stopBathDilution)
-        increment(chemical: session.fixer, dilution: session.fixerDilution)
+        let entry = ChemicalUsageEntry(
+            paperType: session.paper.type,
+            areaSquareMeters: session.paperSize.areaSquareMeters
+        )
+
+        append(entry, chemical: session.developer, dilution: session.developerDilution)
+        append(entry, chemical: session.stopBath, dilution: session.stopBathDilution)
+        append(entry, chemical: session.fixer, dilution: session.fixerDilution)
     }
 
-    private func increment(chemical: Chemical, dilution: ChemicalDilution) {
+    private func append(_ entry: ChemicalUsageEntry, chemical: Chemical, dilution: ChemicalDilution) {
         let usageKey = key(for: chemical, dilution: dilution)
-        counts[usageKey, default: 0] += 1
+        usages[usageKey, default: []].append(entry)
         persist()
     }
 
@@ -41,6 +59,7 @@ final class ChemicalUsageStore: ObservableObject {
     }
 
     private func persist() {
-        defaults.set(counts, forKey: userDefaultsKey)
+        guard let data = try? JSONEncoder().encode(usages) else { return }
+        defaults.set(data, forKey: userDefaultsKey)
     }
 }

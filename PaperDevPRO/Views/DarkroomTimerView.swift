@@ -29,6 +29,8 @@ public struct DarkroomTimerView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 22) {
+                    paperRunTimeline
+
                     phaseTimeline
 
                     phaseHeader
@@ -63,10 +65,67 @@ public struct DarkroomTimerView: View {
             setIdleTimerDisabled(false)
         }
         .sheet(isPresented: $isShowingSetup) {
-            SetupView(initialSession: viewModel.session) { session in
-                viewModel.configure(session: session)
+            SetupView(
+                initialSession: viewModel.selectedRun.session,
+                onResetProject: {
+                    viewModel.resetProject()
+                }
+            ) { session in
+                viewModel.configureSelectedRun(session: session)
             }
+            .interactiveDismissDisabled()
         }
+    }
+
+    private var paperRunTimeline: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                Button {
+                    viewModel.addPaperRun()
+                } label: {
+                    Text("+")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(DarkroomPalette.red)
+                        .frame(width: 58, height: 58)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(DarkroomPalette.red, lineWidth: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                ForEach(viewModel.runs.sorted { $0.number > $1.number }) { run in
+                    Button {
+                        viewModel.selectRun(id: run.id)
+                    } label: {
+                        paperRunCard(for: run)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+        .frame(height: 70)
+    }
+
+    private func paperRunCard(for run: TimerViewModel.PaperRun) -> some View {
+        let isSelected = run.id == viewModel.selectedRunID
+
+        return VStack(alignment: .leading, spacing: 4) {
+            Text("Papír \(run.number)")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+
+            Text(runStatusText(for: run))
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .lineLimit(1)
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 12)
+        .frame(width: 132, height: 58, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(DarkroomPalette.red, lineWidth: isSelected ? 3 : 1)
+        )
     }
 
     private var phaseTimeline: some View {
@@ -196,7 +255,7 @@ public struct DarkroomTimerView: View {
     }
 
     private var isSecondaryButtonDisabled: Bool {
-        viewModel.state == .running
+        secondaryButtonTitle == "SETUP" && viewModel.state == .running
     }
 
     private func handleSecondaryButtonTap() {
@@ -242,6 +301,19 @@ public struct DarkroomTimerView: View {
         let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
         return String(format: "%02d:%02d min", minutes, seconds)
+    }
+
+    private func runStatusText(for run: TimerViewModel.PaperRun) -> String {
+        switch run.state {
+        case .idle:
+            return "READY"
+        case .running:
+            return durationText(for: run.remainingTime).replacingOccurrences(of: " min", with: "")
+        case .paused:
+            return "PAUSED"
+        case .finished:
+            return "DONE"
+        }
     }
 
     private func setIdleTimerDisabled(_ isDisabled: Bool) {

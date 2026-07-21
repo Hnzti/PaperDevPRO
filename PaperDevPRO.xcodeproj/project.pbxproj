@@ -16,6 +16,7 @@
 		AA0000000000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000017 /* SetupView.swift */; };
 		AA0000000000000000000008 /* ChemicalUsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000018 /* ChemicalUsageStore.swift */; };
 		AA0000000000000000000009 /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000019 /* PresetStore.swift */; };
+		AA000000000000000000000A /* DarkroomSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001A /* DarkroomSettingsStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		AA0000000000000000000017 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000018 /* ChemicalUsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChemicalUsageStore.swift; sourceTree = "<group>"; };
 		AA0000000000000000000019 /* PresetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetStore.swift; sourceTree = "<group>"; };
+		AA000000000000000000001A /* DarkroomSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomSettingsStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				AA0000000000000000000013 /* DarkroomModels.swift */,
 				AA0000000000000000000018 /* ChemicalUsageStore.swift */,
 				AA0000000000000000000019 /* PresetStore.swift */,
+				AA000000000000000000001A /* DarkroomSettingsStore.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -183,6 +186,7 @@
 				AA0000000000000000000007 /* SetupView.swift in Sources */,
 				AA0000000000000000000008 /* ChemicalUsageStore.swift in Sources */,
 				AA0000000000000000000009 /* PresetStore.swift in Sources */,
+				AA000000000000000000000A /* DarkroomSettingsStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
