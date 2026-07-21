@@ -25,11 +25,10 @@ struct SetupView: View {
     @State private var transferAfterDeveloperSeconds: Int
     @State private var transferAfterStopBathSeconds: Int
     @State private var transferAfterFixerSeconds: Int
-    @State private var isDeveloperTransferSynced = false
-    @State private var isStopBathTransferSynced = false
-    @State private var isFixerTransferSynced = false
+    @State private var isDeveloperTransferSynced = true
+    @State private var isStopBathTransferSynced = true
+    @State private var isFixerTransferSynced = true
     @State private var phaseDurationOverrides: [ProcessPhase: Int]
-    @State private var presetName = ""
     @State private var activePicker: SetupPicker?
 
     private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
@@ -235,7 +234,10 @@ struct SetupView: View {
     private func pickerSheet(for picker: SetupPicker) -> some View {
         switch picker {
         case .presets:
-            presetsSheet
+            PresetsSheetView(session: computedSession) { session in
+                apply(session: session)
+                activePicker = nil
+            }
         case .paper:
             selectionSheet(title: "Papír") {
                 ForEach(MockDarkroomDatabase.papers) { paper in
@@ -396,113 +398,6 @@ struct SetupView: View {
         case .processWashDuration:
             processDurationPickerSheet(title: "Čas praní", phase: .wash)
         }
-    }
-
-    private var presetsSheet: some View {
-        ZStack {
-            DarkroomPalette.black
-                .ignoresSafeArea()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Presety")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(DarkroomPalette.red)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Uložit aktuální nastavení")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(DarkroomPalette.red)
-
-                        TextField("Název presetu", text: $presetName)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .tint(DarkroomPalette.red)
-                            .padding(16)
-                            .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
-                            )
-
-                        Button {
-                            presetStore.save(name: presetName, session: computedSession)
-                            presetName = ""
-                        } label: {
-                            Text("ULOŽIT PRESET")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                                .foregroundStyle(DarkroomPalette.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 15)
-                                .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(DarkroomPalette.red, lineWidth: 2)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    if presetStore.presets.isEmpty {
-                        Text("Zatím nemáš uložený žádný preset.")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .padding(.top, 10)
-                    } else {
-                        Text("Načíst preset")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .padding(.top, 8)
-
-                        ForEach(presetStore.presets) { preset in
-                            HStack(spacing: 12) {
-                                Button {
-                                    apply(session: preset.session)
-                                    activePicker = nil
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text(preset.name)
-                                            .font(.system(size: 18, weight: .bold, design: .rounded))
-
-                                        Text(preset.session.paper.displayName)
-                                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                            .lineLimit(1)
-                                    }
-                                    .foregroundStyle(DarkroomPalette.red)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .buttonStyle(.plain)
-
-                                Button {
-                                    presetStore.delete(preset)
-                                } label: {
-                                    Text("SMAZAT")
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundStyle(DarkroomPalette.red)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 8)
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(DarkroomPalette.red, lineWidth: 1)
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .padding(16)
-                            .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .stroke(DarkroomPalette.red.opacity(0.25), lineWidth: 1)
-                            )
-                        }
-                    }
-                }
-                .padding(22)
-            }
-        }
-        .preferredColorScheme(.dark)
     }
 
     private func dilutionSheet(
@@ -1164,6 +1059,139 @@ private enum TransferSyncTarget {
     case afterDeveloper
     case afterStopBath
     case afterFixer
+}
+
+private struct PresetsSheetView: View {
+    @ObservedObject private var presetStore = PresetStore.shared
+    @State private var presetName = ""
+
+    let session: DevelopmentSession
+    let onLoad: (DevelopmentSession) -> Void
+
+    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+
+    var body: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Presety")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(DarkroomPalette.red)
+
+                    savePresetSection
+
+                    if presetStore.presets.isEmpty {
+                        Text("Zatím nemáš uložený žádný preset.")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .padding(.top, 10)
+                    } else {
+                        Text("Načíst preset")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .padding(.top, 8)
+
+                        ForEach(presetStore.presets) { preset in
+                            presetRow(preset)
+                        }
+                    }
+                }
+                .padding(22)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var savePresetSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Uložit aktuální nastavení")
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+
+            TextField("Název presetu", text: $presetName)
+                .textInputAutocapitalization(.words)
+                .textContentType(.name)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+                .tint(DarkroomPalette.red)
+                .padding(16)
+                .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
+                )
+                .onSubmit {
+                    savePreset()
+                }
+
+            Button {
+                savePreset()
+            } label: {
+                Text("ULOŽIT PRESET")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkroomPalette.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(DarkroomPalette.red, lineWidth: 2)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func presetRow(_ preset: DevelopmentPreset) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                onLoad(preset.session)
+            } label: {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(preset.name)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+
+                    Text(preset.session.paper.displayName)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                presetStore.delete(preset)
+            } label: {
+                Text("SMAZAT")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkroomPalette.red)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .overlay(
+                        Capsule()
+                            .stroke(DarkroomPalette.red, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(DarkroomPalette.red.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    private func savePreset() {
+        presetStore.save(name: presetName, session: session)
+        presetName = ""
+    }
 }
 
 #Preview {
