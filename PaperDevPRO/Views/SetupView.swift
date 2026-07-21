@@ -1,0 +1,887 @@
+import SwiftUI
+
+struct SetupView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var usageStore = ChemicalUsageStore.shared
+
+    let initialSession: DevelopmentSession
+    let onApply: (DevelopmentSession) -> Void
+
+    @State private var selectedPaper: Paper
+    @State private var selectedPaperSize: PaperSize
+    @State private var selectedDeveloper: Chemical
+    @State private var selectedDeveloperDilution: ChemicalDilution
+    @State private var selectedDeveloperTemperature: Double
+    @State private var developerVolumeMilliliters: Int
+    @State private var selectedStopBath: Chemical
+    @State private var selectedStopBathDilution: ChemicalDilution
+    @State private var selectedStopBathTemperature: Double
+    @State private var stopBathVolumeMilliliters: Int
+    @State private var selectedFixer: Chemical
+    @State private var selectedFixerDilution: ChemicalDilution
+    @State private var selectedFixerTemperature: Double
+    @State private var fixerVolumeMilliliters: Int
+    @State private var transferAfterDeveloperSeconds: Int
+    @State private var transferAfterStopBathSeconds: Int
+    @State private var transferAfterFixerSeconds: Int
+    @State private var phaseDurationOverrides: [ProcessPhase: Int]
+    @State private var activePicker: SetupPicker?
+
+    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+    private let dividerColor = Color(red: 1, green: 0, blue: 0).opacity(0.35)
+
+    init(initialSession: DevelopmentSession, onApply: @escaping (DevelopmentSession) -> Void) {
+        self.initialSession = initialSession
+        self.onApply = onApply
+        _selectedPaper = State(initialValue: initialSession.paper)
+        _selectedPaperSize = State(initialValue: initialSession.paperSize)
+        _selectedDeveloper = State(initialValue: initialSession.developer)
+        _selectedDeveloperDilution = State(initialValue: initialSession.developerDilution)
+        _selectedDeveloperTemperature = State(initialValue: initialSession.developerTemperatureCelsius)
+        _developerVolumeMilliliters = State(initialValue: initialSession.developerVolumeMilliliters)
+        _selectedStopBath = State(initialValue: initialSession.stopBath)
+        _selectedStopBathDilution = State(initialValue: initialSession.stopBathDilution)
+        _selectedStopBathTemperature = State(initialValue: initialSession.stopBathTemperatureCelsius)
+        _stopBathVolumeMilliliters = State(initialValue: initialSession.stopBathVolumeMilliliters)
+        _selectedFixer = State(initialValue: initialSession.fixer)
+        _selectedFixerDilution = State(initialValue: initialSession.fixerDilution)
+        _selectedFixerTemperature = State(initialValue: initialSession.fixerTemperatureCelsius)
+        _fixerVolumeMilliliters = State(initialValue: initialSession.fixerVolumeMilliliters)
+        _transferAfterDeveloperSeconds = State(initialValue: Int(initialSession.transferAfterDeveloperDuration.rounded()))
+        _transferAfterStopBathSeconds = State(initialValue: Int(initialSession.transferAfterStopBathDuration.rounded()))
+        _transferAfterFixerSeconds = State(initialValue: Int(initialSession.transferAfterFixerDuration.rounded()))
+        _phaseDurationOverrides = State(
+            initialValue: initialSession.phaseDurationOverrides.mapValues { Int($0.rounded()) }
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    topBar
+
+                    settingsSection(title: "Papír") {
+                        pickerRow(title: "Typ papíru", value: selectedPaper.displayName, picker: .paper)
+                        divider
+                        pickerRow(title: "Rozměr", value: selectedPaperSize.displayName, picker: .paperSize)
+                    }
+
+                    settingsSection(title: "Vývojka") {
+                        pickerRow(title: "Chemie", value: selectedDeveloper.displayName, picker: .developer)
+                        divider
+                        pickerRow(title: "Ředění", value: selectedDeveloperDilution.ratio, picker: .developerDilution)
+                        divider
+                        pickerRow(title: "Objem", value: millilitersText(developerVolumeMilliliters), picker: .developerVolume)
+                        divider
+                        mixRows(dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
+                        divider
+                        pickerRow(title: "Teplota", value: temperatureText(selectedDeveloperTemperature), picker: .developerTemperature)
+                        divider
+                        readOnlyRow(title: "Čas", value: selectedDeveloperDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedDeveloperTemperature).displayText)
+                        divider
+                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)), picker: .transferAfterDeveloper)
+                        divider
+                        capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
+                        divider
+                        usageRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+                    }
+
+                    settingsSection(title: "Přerušovač") {
+                        pickerRow(title: "Chemie", value: selectedStopBath.displayName, picker: .stopBath)
+                        divider
+                        pickerRow(title: "Ředění", value: selectedStopBathDilution.ratio, picker: .stopBathDilution)
+                        divider
+                        pickerRow(title: "Objem", value: millilitersText(stopBathVolumeMilliliters), picker: .stopBathVolume)
+                        divider
+                        mixRows(dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
+                        divider
+                        pickerRow(title: "Teplota", value: temperatureText(selectedStopBathTemperature), picker: .stopBathTemperature)
+                        divider
+                        readOnlyRow(title: "Čas", value: selectedStopBathDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedStopBathTemperature).displayText)
+                        divider
+                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterStopBathSeconds)), picker: .transferAfterStopBath)
+                        divider
+                        capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
+                        divider
+                        usageRow(chemical: selectedStopBath, dilution: selectedStopBathDilution)
+                    }
+
+                    settingsSection(title: "Ustalovač") {
+                        pickerRow(title: "Chemie", value: selectedFixer.displayName, picker: .fixer)
+                        divider
+                        pickerRow(title: "Ředění", value: selectedFixerDilution.ratio, picker: .fixerDilution)
+                        divider
+                        pickerRow(title: "Objem", value: millilitersText(fixerVolumeMilliliters), picker: .fixerVolume)
+                        divider
+                        mixRows(dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
+                        divider
+                        pickerRow(title: "Teplota", value: temperatureText(selectedFixerTemperature), picker: .fixerTemperature)
+                        divider
+                        readOnlyRow(title: "Čas", value: selectedFixerDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedFixerTemperature).displayText)
+                        divider
+                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterFixerSeconds)), picker: .transferAfterFixer)
+                        divider
+                        capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
+                        divider
+                        usageRow(chemical: selectedFixer, dilution: selectedFixerDilution)
+                    }
+
+                    settingsSection(title: "Proces") {
+                        ForEach(Array(computedSession.resolvedPhases().enumerated()), id: \.element.id) { index, phase in
+                            pickerRow(
+                                title: displayTitle(for: phase.phase),
+                                value: durationText(for: phase.duration),
+                                picker: processPicker(for: phase.phase)
+                            )
+
+                            if index < computedSession.resolvedPhases().count - 1 {
+                                divider
+                            }
+                        }
+                    }
+
+                }
+                .padding(20)
+            }
+        }
+        .preferredColorScheme(.dark)
+        .statusBar(hidden: true)
+        .sheet(item: $activePicker) { picker in
+            pickerSheet(for: picker)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            circularIconButton(systemName: "chevron.left") {
+                applySelection()
+            }
+
+            Spacer()
+
+            Text("Setup")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+
+            Spacer()
+
+            resetButton {
+                resetToDefaults()
+            }
+        }
+    }
+
+    private var computedSession: DevelopmentSession {
+        DevelopmentSession(
+            paper: selectedPaper,
+            paperSize: selectedPaperSize,
+            developer: selectedDeveloper,
+            developerDilution: selectedDeveloperDilution,
+            stopBath: selectedStopBath,
+            stopBathDilution: selectedStopBathDilution,
+            fixer: selectedFixer,
+            fixerDilution: selectedFixerDilution,
+            developerTemperatureCelsius: selectedDeveloperTemperature,
+            stopBathTemperatureCelsius: selectedStopBathTemperature,
+            fixerTemperatureCelsius: selectedFixerTemperature,
+            developerVolumeMilliliters: developerVolumeMilliliters,
+            stopBathVolumeMilliliters: stopBathVolumeMilliliters,
+            fixerVolumeMilliliters: fixerVolumeMilliliters,
+            transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
+            transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
+            transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds),
+            phaseDurationOverrides: phaseDurationOverrides.mapValues(TimeInterval.init)
+        )
+    }
+
+    @ViewBuilder
+    private func pickerSheet(for picker: SetupPicker) -> some View {
+        switch picker {
+        case .paper:
+            selectionSheet(title: "Papír") {
+                ForEach(MockDarkroomDatabase.papers) { paper in
+                    selectionButton(
+                        title: paper.displayName,
+                        subtitle: paper.type.displayName,
+                        isSelected: paper.id == selectedPaper.id
+                    ) {
+                        selectedPaper = paper
+                        selectedPaperSize = paper.availableSizes.first ?? selectedPaperSize
+                        normalizeTemperatures()
+                        activePicker = nil
+                    }
+                }
+            }
+        case .paperSize:
+            selectionSheet(title: "Rozměr") {
+                ForEach(selectedPaper.availableSizes) { size in
+                    selectionButton(
+                        title: size.displayName,
+                        subtitle: nil,
+                        isSelected: size.id == selectedPaperSize.id
+                    ) {
+                        selectedPaperSize = size
+                        activePicker = nil
+                    }
+                }
+            }
+        case .developer:
+            selectionSheet(title: "Vývojka") {
+                ForEach(MockDarkroomDatabase.developers) { developer in
+                    selectionButton(
+                        title: developer.displayName,
+                        subtitle: developer.dilutions.map(\.ratio).joined(separator: ", "),
+                        isSelected: developer.id == selectedDeveloper.id
+                    ) {
+                        selectedDeveloper = developer
+                        selectedDeveloperDilution = developer.dilutions[0]
+                        selectedDeveloperTemperature = firstTemperature(for: selectedDeveloperDilution)
+                        activePicker = nil
+                    }
+                }
+            }
+        case .developerDilution:
+            dilutionSheet(
+                title: "Ředění vývojky",
+                dilutions: selectedDeveloper.dilutions,
+                selectedDilution: selectedDeveloperDilution
+            ) { dilution in
+                selectedDeveloperDilution = dilution
+                selectedDeveloperTemperature = firstTemperature(for: dilution)
+            }
+        case .developerVolume:
+            volumePickerSheet(title: "Objem vývojky", milliliters: $developerVolumeMilliliters)
+        case .developerTemperature:
+            temperatureSheet(
+                title: "Teplota vývojky",
+                temperatures: availableTemperatures(for: selectedDeveloperDilution),
+                selectedTemperature: selectedDeveloperTemperature
+            ) { temperature in
+                selectedDeveloperTemperature = temperature
+            }
+        case .stopBath:
+            selectionSheet(title: "Přerušovač") {
+                ForEach(MockDarkroomDatabase.stopBaths) { stopBath in
+                    selectionButton(
+                        title: stopBath.displayName,
+                        subtitle: stopBath.dilutions.map(\.ratio).joined(separator: ", "),
+                        isSelected: stopBath.id == selectedStopBath.id
+                    ) {
+                        selectedStopBath = stopBath
+                        selectedStopBathDilution = stopBath.dilutions[0]
+                        selectedStopBathTemperature = firstTemperature(for: selectedStopBathDilution)
+                        activePicker = nil
+                    }
+                }
+            }
+        case .stopBathDilution:
+            dilutionSheet(
+                title: "Ředění přerušovače",
+                dilutions: selectedStopBath.dilutions,
+                selectedDilution: selectedStopBathDilution
+            ) { dilution in
+                selectedStopBathDilution = dilution
+                selectedStopBathTemperature = firstTemperature(for: dilution)
+            }
+        case .stopBathVolume:
+            volumePickerSheet(title: "Objem přerušovače", milliliters: $stopBathVolumeMilliliters)
+        case .stopBathTemperature:
+            temperatureSheet(
+                title: "Teplota přerušovače",
+                temperatures: availableTemperatures(for: selectedStopBathDilution),
+                selectedTemperature: selectedStopBathTemperature
+            ) { temperature in
+                selectedStopBathTemperature = temperature
+            }
+        case .fixer:
+            selectionSheet(title: "Ustalovač") {
+                ForEach(MockDarkroomDatabase.fixers) { fixer in
+                    selectionButton(
+                        title: fixer.displayName,
+                        subtitle: fixer.dilutions.map(\.ratio).joined(separator: ", "),
+                        isSelected: fixer.id == selectedFixer.id
+                    ) {
+                        selectedFixer = fixer
+                        selectedFixerDilution = fixer.dilutions[0]
+                        selectedFixerTemperature = firstTemperature(for: selectedFixerDilution)
+                        activePicker = nil
+                    }
+                }
+            }
+        case .fixerDilution:
+            dilutionSheet(
+                title: "Ředění ustalovače",
+                dilutions: selectedFixer.dilutions,
+                selectedDilution: selectedFixerDilution
+            ) { dilution in
+                selectedFixerDilution = dilution
+                selectedFixerTemperature = firstTemperature(for: dilution)
+            }
+        case .fixerVolume:
+            volumePickerSheet(title: "Objem ustalovače", milliliters: $fixerVolumeMilliliters)
+        case .fixerTemperature:
+            temperatureSheet(
+                title: "Teplota ustalovače",
+                temperatures: availableTemperatures(for: selectedFixerDilution),
+                selectedTemperature: selectedFixerTemperature
+            ) { temperature in
+                selectedFixerTemperature = temperature
+            }
+        case .transferAfterDeveloper:
+            durationPickerSheet(
+                title: "Přendání do přerušovače",
+                totalSeconds: $transferAfterDeveloperSeconds
+            )
+        case .transferAfterStopBath:
+            durationPickerSheet(
+                title: "Přendání do ustalovače",
+                totalSeconds: $transferAfterStopBathSeconds
+            )
+        case .transferAfterFixer:
+            durationPickerSheet(
+                title: "Přendání do praní",
+                totalSeconds: $transferAfterFixerSeconds
+            )
+        case .processDeveloperDuration:
+            processDurationPickerSheet(title: "Čas vývojky", phase: .developer)
+        case .processTransferToStopBathDuration:
+            processDurationPickerSheet(title: "Čas přendání do přerušovače", phase: .transferToStopBath)
+        case .processStopBathDuration:
+            processDurationPickerSheet(title: "Čas přerušovače", phase: .stopBath)
+        case .processTransferToFixerDuration:
+            processDurationPickerSheet(title: "Čas přendání do ustalovače", phase: .transferToFixer)
+        case .processFixerDuration:
+            processDurationPickerSheet(title: "Čas ustalovače", phase: .fixer)
+        case .processTransferToWashDuration:
+            processDurationPickerSheet(title: "Čas přendání do praní", phase: .transferToWash)
+        case .processWashDuration:
+            processDurationPickerSheet(title: "Čas praní", phase: .wash)
+        }
+    }
+
+    private func dilutionSheet(
+        title: String,
+        dilutions: [ChemicalDilution],
+        selectedDilution: ChemicalDilution,
+        onSelect: @escaping (ChemicalDilution) -> Void
+    ) -> some View {
+        selectionSheet(title: title) {
+            ForEach(dilutions) { dilution in
+                selectionButton(
+                    title: dilution.ratio,
+                    subtitle: dilution.timeRange(for: selectedPaper, temperatureCelsius: firstTemperature(for: dilution)).displayText,
+                    isSelected: dilution.id == selectedDilution.id
+                ) {
+                    onSelect(dilution)
+                    activePicker = nil
+                }
+            }
+        }
+    }
+
+    private func temperatureSheet(
+        title: String,
+        temperatures: [Double],
+        selectedTemperature: Double,
+        onSelect: @escaping (Double) -> Void
+    ) -> some View {
+        let selectedTemperatureBinding = Binding<Double>(
+            get: { selectedTemperature },
+            set: { onSelect($0) }
+        )
+
+        return ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 24) {
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkroomPalette.red)
+
+                Picker("Teplota", selection: selectedTemperatureBinding) {
+                    ForEach(temperatures, id: \.self) { temperature in
+                        Text(temperatureText(temperature))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .tag(temperature)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(height: 190)
+
+                confirmationButton
+            }
+            .padding(22)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func durationPickerSheet(
+        title: String,
+        totalSeconds: Binding<Int>
+    ) -> some View {
+        let minutes = Binding<Int>(
+            get: { totalSeconds.wrappedValue / 60 },
+            set: { totalSeconds.wrappedValue = ($0 * 60) + (totalSeconds.wrappedValue % 60) }
+        )
+        let seconds = Binding<Int>(
+            get: { totalSeconds.wrappedValue % 60 },
+            set: { totalSeconds.wrappedValue = ((totalSeconds.wrappedValue / 60) * 60) + $0 }
+        )
+
+        return ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 24) {
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkroomPalette.red)
+
+                HStack(spacing: 18) {
+                    Picker("Minuty", selection: minutes) {
+                        ForEach(0...999, id: \.self) { minute in
+                            Text("\(minute) min")
+                                .foregroundStyle(DarkroomPalette.red)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+
+                    Picker("Sekundy", selection: seconds) {
+                        ForEach(0...59, id: \.self) { second in
+                            Text("\(second) s")
+                                .foregroundStyle(DarkroomPalette.red)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                }
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(height: 190)
+
+                confirmationButton
+            }
+            .padding(22)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func volumePickerSheet(title: String, milliliters: Binding<Int>) -> some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 24) {
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkroomPalette.red)
+
+                Picker("Objem", selection: milliliters) {
+                    ForEach(Array(stride(from: 10, through: 10_000, by: 10)), id: \.self) { value in
+                        Text(millilitersText(value))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .tag(value)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(height: 190)
+
+                confirmationButton
+            }
+            .padding(22)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func processDurationPickerSheet(title: String, phase: ProcessPhase) -> some View {
+        durationPickerSheet(
+            title: title,
+            totalSeconds: Binding<Int>(
+                get: {
+                    phaseDurationOverrides[phase] ?? baseProcessDurationSeconds(for: phase)
+                },
+                set: { newValue in
+                    phaseDurationOverrides[phase] = newValue
+                }
+            )
+        )
+    }
+
+    private var confirmationButton: some View {
+        Button {
+            activePicker = nil
+        } label: {
+            Text("BUDIŽ")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(DarkroomPalette.red, lineWidth: 2)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func selectionSheet<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(title)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(DarkroomPalette.red)
+                        .padding(.bottom, 6)
+
+                    content()
+                }
+                .padding(22)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func selectionButton(
+        title: String,
+        subtitle: String?,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20, weight: .bold))
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    }
+                }
+
+                Spacer()
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(DarkroomPalette.red.opacity(isSelected ? 1 : 0.25), lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func settingsSection<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+                .padding(.leading, 18)
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+
+    private func pickerRow(title: String, value: String, picker: SetupPicker) -> some View {
+        Button {
+            activePicker = picker
+        } label: {
+            rowContent(title: title, value: value, showsChevron: true)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func readOnlyRow(title: String, value: String) -> some View {
+        rowContent(title: title, value: value, showsChevron: false)
+    }
+
+    @ViewBuilder
+    private func mixRows(dilution: ChemicalDilution, totalMilliliters: Int) -> some View {
+        let mix = dilution.mixComponents(totalMilliliters: totalMilliliters)
+        readOnlyRow(title: "Chemikálie", value: millilitersText(mix.chemicalMilliliters))
+        divider
+        readOnlyRow(title: "Voda", value: millilitersText(mix.waterMilliliters))
+    }
+
+    private func capacityRow(chemical: Chemical, dilution: ChemicalDilution, totalMilliliters: Int) -> some View {
+        let completedCycles = usageStore.count(for: chemical, dilution: dilution)
+        let percent = dilution.capacityPercent(
+            for: selectedPaper,
+            paperSize: selectedPaperSize,
+            completedCycles: completedCycles,
+            workingSolutionLiters: Double(totalMilliliters) / 1_000
+        )
+
+        return readOnlyRow(
+            title: "Vydatnost",
+            value: percent.map { "\($0) %" } ?? "--"
+        )
+    }
+
+    private func usageRow(chemical: Chemical, dilution: ChemicalDilution) -> some View {
+        HStack(spacing: 12) {
+            Text("Použito")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+
+            Spacer(minLength: 16)
+
+            Text("\(usageStore.count(for: chemical, dilution: dilution))x")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+
+            Button {
+                usageStore.reset(chemical: chemical, dilution: dilution)
+            } label: {
+                Text("RESET")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .overlay(
+                        Capsule()
+                            .stroke(DarkroomPalette.red, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+    }
+
+    private func rowContent(title: String, value: String, showsChevron: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+
+            Spacer(minLength: 16)
+
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.trailing)
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+            }
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(dividerColor)
+            .frame(height: 1)
+            .padding(.leading, 18)
+    }
+
+    private func circularIconButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(width: 56, height: 56)
+                .background(Circle().fill(cardColor))
+                .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func resetButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text("RESET")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(width: 64, height: 56)
+                .background(Capsule().fill(cardColor))
+                .overlay(Capsule().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func availableTemperatures(for dilution: ChemicalDilution) -> [Double] {
+        let temperatures = dilution.availableTemperatures(for: selectedPaper)
+        return temperatures.isEmpty ? [20] : temperatures
+    }
+
+    private func firstTemperature(for dilution: ChemicalDilution) -> Double {
+        availableTemperatures(for: dilution).first ?? 20
+    }
+
+    private func normalizeTemperatures() {
+        selectedDeveloperTemperature = firstTemperature(for: selectedDeveloperDilution)
+        selectedStopBathTemperature = firstTemperature(for: selectedStopBathDilution)
+        selectedFixerTemperature = firstTemperature(for: selectedFixerDilution)
+    }
+
+    private func resetToDefaults() {
+        apply(session: MockDarkroomDatabase.defaultSession)
+    }
+
+    private func apply(session: DevelopmentSession) {
+        selectedPaper = session.paper
+        selectedPaperSize = session.paperSize
+        selectedDeveloper = session.developer
+        selectedDeveloperDilution = session.developerDilution
+        selectedDeveloperTemperature = session.developerTemperatureCelsius
+        developerVolumeMilliliters = session.developerVolumeMilliliters
+        selectedStopBath = session.stopBath
+        selectedStopBathDilution = session.stopBathDilution
+        selectedStopBathTemperature = session.stopBathTemperatureCelsius
+        stopBathVolumeMilliliters = session.stopBathVolumeMilliliters
+        selectedFixer = session.fixer
+        selectedFixerDilution = session.fixerDilution
+        selectedFixerTemperature = session.fixerTemperatureCelsius
+        fixerVolumeMilliliters = session.fixerVolumeMilliliters
+        transferAfterDeveloperSeconds = Int(session.transferAfterDeveloperDuration.rounded())
+        transferAfterStopBathSeconds = Int(session.transferAfterStopBathDuration.rounded())
+        transferAfterFixerSeconds = Int(session.transferAfterFixerDuration.rounded())
+        phaseDurationOverrides = session.phaseDurationOverrides.mapValues { Int($0.rounded()) }
+    }
+
+    private func baseProcessDurationSeconds(for phase: ProcessPhase) -> Int {
+        let baseSession = DevelopmentSession(
+            paper: selectedPaper,
+            paperSize: selectedPaperSize,
+            developer: selectedDeveloper,
+            developerDilution: selectedDeveloperDilution,
+            stopBath: selectedStopBath,
+            stopBathDilution: selectedStopBathDilution,
+            fixer: selectedFixer,
+            fixerDilution: selectedFixerDilution,
+            developerTemperatureCelsius: selectedDeveloperTemperature,
+            stopBathTemperatureCelsius: selectedStopBathTemperature,
+            fixerTemperatureCelsius: selectedFixerTemperature,
+            developerVolumeMilliliters: developerVolumeMilliliters,
+            stopBathVolumeMilliliters: stopBathVolumeMilliliters,
+            fixerVolumeMilliliters: fixerVolumeMilliliters,
+            transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
+            transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
+            transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds)
+        )
+
+        let duration = baseSession.resolvedPhases().first { $0.phase == phase }?.duration ?? 0
+        return Int(duration.rounded())
+    }
+
+    private func processPicker(for phase: ProcessPhase) -> SetupPicker {
+        switch phase {
+        case .developer:
+            return .processDeveloperDuration
+        case .transferToStopBath:
+            return .processTransferToStopBathDuration
+        case .stopBath:
+            return .processStopBathDuration
+        case .transferToFixer:
+            return .processTransferToFixerDuration
+        case .fixer:
+            return .processFixerDuration
+        case .transferToWash:
+            return .processTransferToWashDuration
+        case .wash:
+            return .processWashDuration
+        }
+    }
+
+    private func applySelection() {
+        onApply(computedSession)
+        dismiss()
+    }
+
+    private func temperatureText(_ temperature: Double) -> String {
+        "\(temperature.formatted(.number.precision(.fractionLength(0)))) °C"
+    }
+
+    private func millilitersText(_ milliliters: Int) -> String {
+        "\(milliliters) ml"
+    }
+
+    private func displayTitle(for phase: ProcessPhase) -> String {
+        switch phase {
+        case .developer:
+            return "Vývojka"
+        case .stopBath:
+            return "Přerušovač"
+        case .fixer:
+            return "Ustalovač"
+        case .transferToStopBath:
+            return "Přendání do přerušovače"
+        case .transferToFixer:
+            return "Přendání do ustalovače"
+        case .transferToWash:
+            return "Přendání do praní"
+        case .wash:
+            return "Praní"
+        }
+    }
+
+    private func durationText(for duration: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(duration.rounded()))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+private enum SetupPicker: String, Identifiable {
+    case paper
+    case paperSize
+    case developer
+    case developerDilution
+    case developerVolume
+    case developerTemperature
+    case stopBath
+    case stopBathDilution
+    case stopBathVolume
+    case stopBathTemperature
+    case fixer
+    case fixerDilution
+    case fixerVolume
+    case fixerTemperature
+    case transferAfterDeveloper
+    case transferAfterStopBath
+    case transferAfterFixer
+    case processDeveloperDuration
+    case processTransferToStopBathDuration
+    case processStopBathDuration
+    case processTransferToFixerDuration
+    case processFixerDuration
+    case processTransferToWashDuration
+    case processWashDuration
+
+    var id: String { rawValue }
+}
+
+#Preview {
+    SetupView(initialSession: MockDarkroomDatabase.defaultSession) { _ in }
+}
