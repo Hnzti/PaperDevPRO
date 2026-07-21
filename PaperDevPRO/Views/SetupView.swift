@@ -3,6 +3,7 @@ import SwiftUI
 struct SetupView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var usageStore = ChemicalUsageStore.shared
+    @ObservedObject private var presetStore = PresetStore.shared
 
     let initialSession: DevelopmentSession
     let onApply: (DevelopmentSession) -> Void
@@ -24,7 +25,11 @@ struct SetupView: View {
     @State private var transferAfterDeveloperSeconds: Int
     @State private var transferAfterStopBathSeconds: Int
     @State private var transferAfterFixerSeconds: Int
+    @State private var isDeveloperTransferSynced = false
+    @State private var isStopBathTransferSynced = false
+    @State private var isFixerTransferSynced = false
     @State private var phaseDurationOverrides: [ProcessPhase: Int]
+    @State private var presetName = ""
     @State private var activePicker: SetupPicker?
 
     private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
@@ -64,6 +69,14 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     topBar
 
+                    settingsSection(title: "Presety") {
+                        pickerRow(
+                            title: "Preset",
+                            value: presetStore.presets.isEmpty ? "Žádný uložený" : "\(presetStore.presets.count) uložených",
+                            picker: .presets
+                        )
+                    }
+
                     settingsSection(title: "Papír") {
                         pickerRow(title: "Typ papíru", value: selectedPaper.displayName, picker: .paper)
                         divider
@@ -83,7 +96,13 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedDeveloperDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedDeveloperTemperature).displayText)
                         divider
-                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)), picker: .transferAfterDeveloper)
+                        transferRow(
+                            value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)),
+                            picker: .transferAfterDeveloper,
+                            isSynced: isDeveloperTransferSynced
+                        ) {
+                            toggleSync(for: .afterDeveloper)
+                        }
                         divider
                         capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
                         divider
@@ -103,7 +122,13 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedStopBathDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedStopBathTemperature).displayText)
                         divider
-                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterStopBathSeconds)), picker: .transferAfterStopBath)
+                        transferRow(
+                            value: durationText(for: TimeInterval(transferAfterStopBathSeconds)),
+                            picker: .transferAfterStopBath,
+                            isSynced: isStopBathTransferSynced
+                        ) {
+                            toggleSync(for: .afterStopBath)
+                        }
                         divider
                         capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
                         divider
@@ -123,7 +148,13 @@ struct SetupView: View {
                         divider
                         readOnlyRow(title: "Čas", value: selectedFixerDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedFixerTemperature).displayText)
                         divider
-                        pickerRow(title: "Přendání", value: durationText(for: TimeInterval(transferAfterFixerSeconds)), picker: .transferAfterFixer)
+                        transferRow(
+                            value: durationText(for: TimeInterval(transferAfterFixerSeconds)),
+                            picker: .transferAfterFixer,
+                            isSynced: isFixerTransferSynced
+                        ) {
+                            toggleSync(for: .afterFixer)
+                        }
                         divider
                         capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
                         divider
@@ -203,6 +234,8 @@ struct SetupView: View {
     @ViewBuilder
     private func pickerSheet(for picker: SetupPicker) -> some View {
         switch picker {
+        case .presets:
+            presetsSheet
         case .paper:
             selectionSheet(title: "Papír") {
                 ForEach(MockDarkroomDatabase.papers) { paper in
@@ -336,17 +369,17 @@ struct SetupView: View {
         case .transferAfterDeveloper:
             durationPickerSheet(
                 title: "Přendání do přerušovače",
-                totalSeconds: $transferAfterDeveloperSeconds
+                totalSeconds: transferSecondsBinding(for: .afterDeveloper)
             )
         case .transferAfterStopBath:
             durationPickerSheet(
                 title: "Přendání do ustalovače",
-                totalSeconds: $transferAfterStopBathSeconds
+                totalSeconds: transferSecondsBinding(for: .afterStopBath)
             )
         case .transferAfterFixer:
             durationPickerSheet(
                 title: "Přendání do praní",
-                totalSeconds: $transferAfterFixerSeconds
+                totalSeconds: transferSecondsBinding(for: .afterFixer)
             )
         case .processDeveloperDuration:
             processDurationPickerSheet(title: "Čas vývojky", phase: .developer)
@@ -363,6 +396,113 @@ struct SetupView: View {
         case .processWashDuration:
             processDurationPickerSheet(title: "Čas praní", phase: .wash)
         }
+    }
+
+    private var presetsSheet: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Presety")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(DarkroomPalette.red)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Uložit aktuální nastavení")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+
+                        TextField("Název presetu", text: $presetName)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .tint(DarkroomPalette.red)
+                            .padding(16)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
+                            )
+
+                        Button {
+                            presetStore.save(name: presetName, session: computedSession)
+                            presetName = ""
+                        } label: {
+                            Text("ULOŽIT PRESET")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundStyle(DarkroomPalette.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(DarkroomPalette.red, lineWidth: 2)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if presetStore.presets.isEmpty {
+                        Text("Zatím nemáš uložený žádný preset.")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .padding(.top, 10)
+                    } else {
+                        Text("Načíst preset")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .padding(.top, 8)
+
+                        ForEach(presetStore.presets) { preset in
+                            HStack(spacing: 12) {
+                                Button {
+                                    apply(session: preset.session)
+                                    activePicker = nil
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text(preset.name)
+                                            .font(.system(size: 18, weight: .bold, design: .rounded))
+
+                                        Text(preset.session.paper.displayName)
+                                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                            .lineLimit(1)
+                                    }
+                                    .foregroundStyle(DarkroomPalette.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    presetStore.delete(preset)
+                                } label: {
+                                    Text("SMAZAT")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(DarkroomPalette.red)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 8)
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(DarkroomPalette.red, lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(16)
+                            .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(DarkroomPalette.red.opacity(0.25), lineWidth: 1)
+                            )
+                        }
+                    }
+                }
+                .padding(22)
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 
     private func dilutionSheet(
@@ -619,6 +759,53 @@ struct SetupView: View {
         .buttonStyle(.plain)
     }
 
+    private func transferRow(
+        value: String,
+        picker: SetupPicker,
+        isSynced: Bool,
+        toggleSync: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                activePicker = picker
+            } label: {
+                HStack(spacing: 12) {
+                    Text("Přendání")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+
+                    Spacer(minLength: 16)
+
+                    Text(value)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button(action: toggleSync) {
+                HStack(spacing: 5) {
+                    Image(systemName: isSynced ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 14, weight: .bold))
+
+                    Text("SYNC")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .overlay(
+                    Capsule()
+                        .stroke(DarkroomPalette.red.opacity(isSynced ? 1 : 0.45), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+    }
+
     private func readOnlyRow(title: String, value: String) -> some View {
         rowContent(title: title, value: value, showsChevron: false)
     }
@@ -744,6 +931,96 @@ struct SetupView: View {
         selectedFixerTemperature = firstTemperature(for: selectedFixerDilution)
     }
 
+    private func transferSecondsBinding(for transfer: TransferSyncTarget) -> Binding<Int> {
+        Binding<Int>(
+            get: { transferSeconds(for: transfer) },
+            set: { setTransferSeconds($0, for: transfer) }
+        )
+    }
+
+    private func transferSeconds(for transfer: TransferSyncTarget) -> Int {
+        switch transfer {
+        case .afterDeveloper:
+            return transferAfterDeveloperSeconds
+        case .afterStopBath:
+            return transferAfterStopBathSeconds
+        case .afterFixer:
+            return transferAfterFixerSeconds
+        }
+    }
+
+    private func setTransferSeconds(_ seconds: Int, for transfer: TransferSyncTarget) {
+        switch transfer {
+        case .afterDeveloper:
+            transferAfterDeveloperSeconds = seconds
+        case .afterStopBath:
+            transferAfterStopBathSeconds = seconds
+        case .afterFixer:
+            transferAfterFixerSeconds = seconds
+        }
+
+        guard isTransferSynced(transfer) else {
+            return
+        }
+
+        if isDeveloperTransferSynced {
+            transferAfterDeveloperSeconds = seconds
+        }
+
+        if isStopBathTransferSynced {
+            transferAfterStopBathSeconds = seconds
+        }
+
+        if isFixerTransferSynced {
+            transferAfterFixerSeconds = seconds
+        }
+    }
+
+    private func toggleSync(for transfer: TransferSyncTarget) {
+        switch transfer {
+        case .afterDeveloper:
+            isDeveloperTransferSynced.toggle()
+        case .afterStopBath:
+            isStopBathTransferSynced.toggle()
+        case .afterFixer:
+            isFixerTransferSynced.toggle()
+        }
+
+        guard isTransferSynced(transfer),
+              let existingSyncedValue = syncedTransferValue(excluding: transfer) else {
+            return
+        }
+
+        setTransferSeconds(existingSyncedValue, for: transfer)
+    }
+
+    private func isTransferSynced(_ transfer: TransferSyncTarget) -> Bool {
+        switch transfer {
+        case .afterDeveloper:
+            return isDeveloperTransferSynced
+        case .afterStopBath:
+            return isStopBathTransferSynced
+        case .afterFixer:
+            return isFixerTransferSynced
+        }
+    }
+
+    private func syncedTransferValue(excluding transfer: TransferSyncTarget) -> Int? {
+        if transfer != .afterDeveloper, isDeveloperTransferSynced {
+            return transferAfterDeveloperSeconds
+        }
+
+        if transfer != .afterStopBath, isStopBathTransferSynced {
+            return transferAfterStopBathSeconds
+        }
+
+        if transfer != .afterFixer, isFixerTransferSynced {
+            return transferAfterFixerSeconds
+        }
+
+        return nil
+    }
+
     private func resetToDefaults() {
         apply(session: MockDarkroomDatabase.defaultSession)
     }
@@ -854,6 +1131,7 @@ struct SetupView: View {
 }
 
 private enum SetupPicker: String, Identifiable {
+    case presets
     case paper
     case paperSize
     case developer
@@ -880,6 +1158,12 @@ private enum SetupPicker: String, Identifiable {
     case processWashDuration
 
     var id: String { rawValue }
+}
+
+private enum TransferSyncTarget {
+    case afterDeveloper
+    case afterStopBath
+    case afterFixer
 }
 
 #Preview {
