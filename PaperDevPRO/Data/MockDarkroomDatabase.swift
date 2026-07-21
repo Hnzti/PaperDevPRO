@@ -306,4 +306,14 @@ public enum MockDarkroomDatabase {
             fixerTemperatureCelsius: 20
         )
     }
+
+    @MainActor
+    public static var configuredDefaultSession: DevelopmentSession {
+        var session = defaultSession
+        let transfer = TimeInterval(DarkroomSettingsStore.shared.defaultTransferSeconds)
+        session.transferAfterDeveloperDuration = transfer
+        session.transferAfterStopBathDuration = transfer
+        session.transferAfterFixerDuration = transfer
+        return session
+    }
 }

@@ -12,15 +12,19 @@ public enum DarkroomPalette {
 @MainActor
 public struct DarkroomTimerView: View {
     @StateObject private var viewModel: TimerViewModel
+    @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var isShowingSetup = false
 
-    public init(session: DevelopmentSession = MockDarkroomDatabase.defaultSession) {
-        _viewModel = StateObject(wrappedValue: TimerViewModel(session: session))
+    public init(session: DevelopmentSession? = nil) {
+        let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
+        _viewModel = StateObject(wrappedValue: TimerViewModel(session: resolvedSession))
     }
 
     public init(viewModel: TimerViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
+
+    private var copy: AppCopy { settingsStore.copy }
 
     public var body: some View {
         GeometryReader { geometry in
@@ -59,10 +63,10 @@ public struct DarkroomTimerView: View {
         .preferredColorScheme(.dark)
         .statusBar(hidden: true)
         .onAppear {
-            setIdleTimerDisabled(true)
+            settingsStore.applyKeepScreenOn()
         }
-        .onDisappear {
-            setIdleTimerDisabled(false)
+        .onChange(of: settingsStore.keepScreenOn) { _, _ in
+            settingsStore.applyKeepScreenOn()
         }
         .sheet(isPresented: $isShowingSetup) {
             SetupView(
@@ -84,7 +88,7 @@ public struct DarkroomTimerView: View {
                     viewModel.addPaperRun()
                 } label: {
                     Text("+")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 32, weight: .bold))
                         .foregroundStyle(DarkroomPalette.red)
                         .frame(width: 58, height: 58)
                         .overlay(
@@ -112,8 +116,8 @@ public struct DarkroomTimerView: View {
         let isSelected = run.id == viewModel.selectedRunID
 
         return VStack(alignment: .leading, spacing: 4) {
-            Text("Papír \(run.number)")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+            Text("\(copy.paper) \(run.number)")
+                .font(.system(size: 17, weight: .bold))
 
             Text(runStatusText(for: run))
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
@@ -152,8 +156,8 @@ public struct DarkroomTimerView: View {
         let isCurrentPhase = index == viewModel.currentPhaseIndex
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("\(index + 1). \(displayTitle(for: timedPhase.phase))")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+            Text("\(index + 1). \(copy.phaseTitle(timedPhase.phase))")
+                .font(.system(size: 18, weight: .bold))
                 .lineLimit(1)
 
             Text(durationText(for: timedPhase.duration))
@@ -173,8 +177,8 @@ public struct DarkroomTimerView: View {
 
     private var phaseHeader: some View {
         VStack(spacing: 8) {
-            Text(displayTitle(for: viewModel.currentPhase.phase).uppercased())
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+            Text(copy.phaseTitle(viewModel.currentPhase.phase).uppercased())
+                .font(.system(size: 34, weight: .bold))
         }
         .accessibilityElement(children: .combine)
     }
@@ -183,17 +187,17 @@ public struct DarkroomTimerView: View {
     private var statusText: some View {
         switch viewModel.state {
         case .idle:
-            Text("READY")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+            Text(copy.ready)
+                .font(.system(size: 30, weight: .bold))
         case .running:
-            Text("RUNNING")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+            Text(copy.running)
+                .font(.system(size: 30, weight: .bold))
         case .paused:
-            Text("PAUSED")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+            Text(copy.paused)
+                .font(.system(size: 30, weight: .bold))
         case .finished:
-            Text("COMPLETE")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+            Text(copy.complete)
+                .font(.system(size: 30, weight: .bold))
         }
     }
 
@@ -223,7 +227,7 @@ public struct DarkroomTimerView: View {
 
     private func controlButtonLabel(_ title: String, isDisabled: Bool = false) -> some View {
         Text(title)
-            .font(.system(size: 24, weight: .bold, design: .rounded))
+            .font(.system(size: 24, weight: .bold))
             .foregroundStyle(DarkroomPalette.red.opacity(isDisabled ? 0.35 : 1))
             .frame(width: 124, height: 124)
             .overlay(
@@ -235,27 +239,25 @@ public struct DarkroomTimerView: View {
     private var startPauseTitle: String {
         switch viewModel.state {
         case .running:
-            return "PAUSE"
+            return copy.pause
         case .paused:
-            return "RESUME"
-        case .finished:
-            return "START"
-        case .idle:
-            return "START"
+            return copy.resume
+        case .finished, .idle:
+            return copy.start
         }
     }
 
     private var secondaryButtonTitle: String {
         switch viewModel.state {
         case .paused:
-            return "RESET"
+            return copy.reset
         case .idle, .running, .finished:
-            return "SETUP"
+            return copy.setup
         }
     }
 
     private var isSecondaryButtonDisabled: Bool {
-        secondaryButtonTitle == "SETUP" && viewModel.state == .running
+        viewModel.state == .running && secondaryButtonTitle == copy.setup
     }
 
     private func handleSecondaryButtonTap() {
@@ -270,30 +272,11 @@ public struct DarkroomTimerView: View {
     }
 
     private var accessibilityTimerLabel: String {
-        "\(displayTitle(for: viewModel.currentPhase.phase)), \(viewModel.formattedRemainingTime) remaining"
+        "\(copy.phaseTitle(viewModel.currentPhase.phase)), \(viewModel.formattedRemainingTime)"
     }
 
     private func timerFontSize(for size: CGSize) -> CGFloat {
         min(size.width * 0.24, size.height * 0.22)
-    }
-
-    private func displayTitle(for phase: ProcessPhase) -> String {
-        switch phase {
-        case .developer:
-            return "Vývojka"
-        case .transferToStopBath:
-            return "Přendání"
-        case .stopBath:
-            return "Přerušovač"
-        case .transferToFixer:
-            return "Přendání"
-        case .fixer:
-            return "Ustalovač"
-        case .transferToWash:
-            return "Přendání"
-        case .wash:
-            return "Praní"
-        }
     }
 
     private func durationText(for duration: TimeInterval) -> String {
@@ -306,20 +289,14 @@ public struct DarkroomTimerView: View {
     private func runStatusText(for run: TimerViewModel.PaperRun) -> String {
         switch run.state {
         case .idle:
-            return "READY"
+            return copy.ready
         case .running:
             return durationText(for: run.remainingTime).replacingOccurrences(of: " min", with: "")
         case .paused:
-            return "PAUSED"
+            return copy.paused
         case .finished:
-            return "DONE"
+            return copy.done
         }
-    }
-
-    private func setIdleTimerDisabled(_ isDisabled: Bool) {
-        #if canImport(UIKit)
-        UIApplication.shared.isIdleTimerDisabled = isDisabled
-        #endif
     }
 }
 

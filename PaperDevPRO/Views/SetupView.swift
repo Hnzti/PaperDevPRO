@@ -4,6 +4,7 @@ struct SetupView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var usageStore = ChemicalUsageStore.shared
     @ObservedObject private var presetStore = PresetStore.shared
+    @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
 
     let initialSession: DevelopmentSession
     let onResetProject: () -> Void
@@ -1064,7 +1065,7 @@ struct SetupView: View {
     }
 
     private func resetToDefaults() {
-        apply(session: MockDarkroomDatabase.defaultSession)
+        apply(session: MockDarkroomDatabase.configuredDefaultSession)
     }
 
     private func apply(session: DevelopmentSession) {
@@ -1138,7 +1139,7 @@ struct SetupView: View {
     }
 
     private func temperatureText(_ temperature: Double) -> String {
-        "\(temperature.formatted(.number.precision(.fractionLength(0)))) °C"
+        settingsStore.formatTemperature(temperature)
     }
 
     private func millilitersText(_ milliliters: Int) -> String {
@@ -1216,74 +1217,272 @@ private enum UsageSyncTarget {
 
 private struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
 
     private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+    private var copy: AppCopy { settingsStore.copy }
+
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
+    }
 
     var body: some View {
         ZStack {
             DarkroomPalette.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 22) {
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .frame(width: 56, height: 56)
-                            .background(Circle().fill(cardColor))
-                            .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
+            VStack(spacing: 18) {
+                settingsTopBar
 
-                    Spacer()
-
-                    Text("Nastavení")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(DarkroomPalette.red)
-
-                    Spacer()
-
-                    Color.clear
-                        .frame(width: 56, height: 56)
-                }
-
-                VStack(spacing: 0) {
-                    Button {
-                        SystemSettingsOpener.openColorFilters()
-                    } label: {
-                        HStack(spacing: 12) {
-                            Text("Červený displej")
-                                .font(.system(size: 18, weight: .bold))
-
-                            Spacer(minLength: 16)
-
-                            Text("Nastavení")
-                                .font(.system(size: 18, weight: .regular))
-
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .bold))
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        settingsCard {
+                            linkRow(title: copy.redDisplay) {
+                                SystemSettingsOpener.openColorFilters()
+                            }
+                            settingsDivider
+                            linkRow(title: copy.guidedAccess) {
+                                SystemSettingsOpener.openGuidedAccess()
+                            }
                         }
-                        .foregroundStyle(DarkroomPalette.red)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 16)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
-                )
 
-                Spacer()
+                        settingsCard {
+                            toggleRow(title: copy.sound, isOn: $settingsStore.isSoundEnabled)
+                            settingsDivider
+                            toggleRow(title: copy.haptics, isOn: $settingsStore.isHapticsEnabled)
+                            settingsDivider
+                            toggleRow(title: copy.keepScreenOn, isOn: $settingsStore.keepScreenOn)
+                            settingsDivider
+                            toggleRow(title: copy.darkroomBrightness, isOn: $settingsStore.isDarkroomBrightnessEnabled)
+
+                            if settingsStore.isDarkroomBrightnessEnabled {
+                                settingsDivider
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack {
+                                        Text(copy.brightnessLevel)
+                                            .font(.system(size: 18, weight: .regular))
+                                        Spacer()
+                                        Text("\(Int((settingsStore.darkroomBrightness * 100).rounded())) %")
+                                            .font(.system(size: 18, weight: .bold))
+                                    }
+                                    Slider(
+                                        value: $settingsStore.darkroomBrightness,
+                                        in: 0.05...0.6,
+                                        step: 0.05
+                                    )
+                                    .tint(DarkroomPalette.red)
+                                }
+                                .foregroundStyle(DarkroomPalette.red)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 14)
+                            }
+                        }
+
+                        settingsCard {
+                            stepperRow(
+                                title: copy.defaultTransfer,
+                                valueText: "\(settingsStore.defaultTransferSeconds) \(copy.secondsSuffix)"
+                            ) {
+                                settingsStore.defaultTransferSeconds = max(0, settingsStore.defaultTransferSeconds - 1)
+                            } onIncrement: {
+                                settingsStore.defaultTransferSeconds = min(120, settingsStore.defaultTransferSeconds + 1)
+                            }
+
+                            settingsDivider
+
+                            optionRow(
+                                title: copy.temperatureUnit,
+                                value: settingsStore.temperatureUnit.displayName(language: settingsStore.language)
+                            ) {
+                                let units = TemperatureUnit.allCases
+                                if let index = units.firstIndex(of: settingsStore.temperatureUnit) {
+                                    settingsStore.temperatureUnit = units[(index + 1) % units.count]
+                                }
+                            }
+
+                            settingsDivider
+
+                            optionRow(
+                                title: copy.languageTitle,
+                                value: settingsStore.language.displayName
+                            ) {
+                                let languages = AppLanguage.allCases
+                                if let index = languages.firstIndex(of: settingsStore.language) {
+                                    settingsStore.language = languages[(index + 1) % languages.count]
+                                }
+                            }
+                        }
+
+                        settingsCard {
+                            readOnlySettingsRow(title: copy.version, value: appVersion)
+                            settingsDivider
+                            Text(copy.aboutHint)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundStyle(DarkroomPalette.red.opacity(0.85))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 14)
+                        }
+                    }
+                    .padding(.bottom, 24)
+                }
             }
-            .padding(20)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
         }
         .preferredColorScheme(.dark)
         .statusBar(hidden: true)
+    }
+
+    private var settingsTopBar: some View {
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(DarkroomPalette.red)
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(cardColor))
+                    .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Text(copy.settingsTitle)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(DarkroomPalette.red)
+
+            Spacer()
+
+            Color.clear
+                .frame(width: 56, height: 56)
+        }
+    }
+
+    private func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var settingsDivider: some View {
+        Rectangle()
+            .fill(DarkroomPalette.red.opacity(0.2))
+            .frame(height: 1)
+            .padding(.leading, 18)
+    }
+
+    private func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title)
+                .font(.system(size: 18, weight: isOn.wrappedValue ? .bold : .regular))
+        }
+        .tint(DarkroomPalette.red)
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+
+    private func linkRow(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 18, weight: .bold))
+
+                Spacer(minLength: 16)
+
+                Text(copy.openSettings)
+                    .font(.system(size: 18, weight: .regular))
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func optionRow(title: String, value: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 18, weight: .regular))
+
+                Spacer(minLength: 16)
+
+                Text(value)
+                    .font(.system(size: 18, weight: .bold))
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func stepperRow(
+        title: String,
+        valueText: String,
+        onDecrement: @escaping () -> Void,
+        onIncrement: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 18, weight: .regular))
+
+            Spacer(minLength: 12)
+
+            Button(action: onDecrement) {
+                Image(systemName: "minus")
+                    .font(.system(size: 16, weight: .bold))
+                    .frame(width: 36, height: 36)
+                    .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Text(valueText)
+                .font(.system(size: 18, weight: .bold))
+                .frame(minWidth: 48)
+
+            Button(action: onIncrement) {
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .bold))
+                    .frame(width: 36, height: 36)
+                    .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+
+    private func readOnlySettingsRow(title: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 18, weight: .regular))
+
+            Spacer(minLength: 16)
+
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
     }
 }
 

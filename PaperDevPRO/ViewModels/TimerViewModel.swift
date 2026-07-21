@@ -85,9 +85,10 @@ public final class TimerViewModel: ObservableObject {
         return phases[nextIndex].phase.title
     }
 
-    public init(session: DevelopmentSession = MockDarkroomDatabase.defaultSession) {
-        self.session = session
-        let initialRun = Self.makeRun(number: 1, session: session)
+    public init(session: DevelopmentSession? = nil) {
+        let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
+        self.session = resolvedSession
+        let initialRun = Self.makeRun(number: 1, session: resolvedSession)
         self.runs = [initialRun]
         self.selectedRunID = initialRun.id
         self.nextRunNumber = 2
@@ -125,7 +126,7 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func resetProject() {
-        configure(session: MockDarkroomDatabase.defaultSession)
+        configure(session: MockDarkroomDatabase.configuredDefaultSession)
     }
 
     public func addPaperRun() {
@@ -319,38 +320,55 @@ public final class TimerViewModel: ObservableObject {
     }
 
     private func triggerWarningFeedback() {
+        let settings = DarkroomSettingsStore.shared
+
         #if canImport(AudioToolbox)
-        AudioServicesPlaySystemSound(1057)
+        if settings.isSoundEnabled {
+            AudioServicesPlaySystemSound(1057)
+        }
         #endif
 
         #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        if settings.isHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        }
         #endif
     }
 
     private func triggerPhaseChangeFeedback() {
+        let settings = DarkroomSettingsStore.shared
+
         #if canImport(AudioToolbox)
-        AudioServicesPlaySystemSound(1113)
+        if settings.isSoundEnabled {
+            AudioServicesPlaySystemSound(1113)
+        }
         #endif
 
         #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        if settings.isHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
         #endif
     }
 
     private func triggerCompletionFeedback() {
+        let settings = DarkroomSettingsStore.shared
+
         #if canImport(AudioToolbox)
-        AudioServicesPlaySystemSound(1025)
+        if settings.isSoundEnabled {
+            AudioServicesPlaySystemSound(1025)
+        }
         #endif
 
         #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        if settings.isHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
         #endif
     }
 
     private func setIdleTimerDisabled(_ isDisabled: Bool) {
-        #if canImport(UIKit)
-        UIApplication.shared.isIdleTimerDisabled = isDisabled
-        #endif
+        _ = isDisabled
+        DarkroomSettingsStore.shared.applyKeepScreenOn()
     }
 }
