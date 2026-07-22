@@ -9,11 +9,16 @@ public enum DarkroomPalette {
     public static let red = Color(red: 1, green: 0, blue: 0)
 }
 
+public enum SetupRoute: Hashable {
+    case setup
+    case settings
+}
+
 @MainActor
 public struct DarkroomTimerView: View {
     @StateObject private var viewModel: TimerViewModel
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
-    @State private var isShowingSetup = false
+    @State private var navigationPath: [SetupRoute] = []
 
     public init(session: DevelopmentSession? = nil) {
         let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
@@ -27,6 +32,38 @@ public struct DarkroomTimerView: View {
     private var copy: AppCopy { settingsStore.copy }
 
     public var body: some View {
+        NavigationStack(path: $navigationPath) {
+            timerContent
+                .navigationDestination(for: SetupRoute.self) { route in
+                    destinationView(for: route)
+                        .navigationBarBackButtonHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
+        }
+        .tint(DarkroomPalette.red)
+    }
+
+    @ViewBuilder
+    private func destinationView(for route: SetupRoute) -> some View {
+        switch route {
+        case .setup:
+            SetupView(
+                initialSession: viewModel.selectedRun.session,
+                onResetProject: {
+                    viewModel.resetProject()
+                },
+                onOpenSettings: {
+                    navigationPath.append(.settings)
+                }
+            ) { session in
+                viewModel.configureSelectedRun(session: session)
+            }
+        case .settings:
+            SettingsSheetView()
+        }
+    }
+
+    private var timerContent: some View {
         GeometryReader { geometry in
             ZStack {
                 DarkroomPalette.black
@@ -67,17 +104,6 @@ public struct DarkroomTimerView: View {
         }
         .onChange(of: settingsStore.keepScreenOn) { _, _ in
             settingsStore.applyKeepScreenOn()
-        }
-        .sheet(isPresented: $isShowingSetup) {
-            SetupView(
-                initialSession: viewModel.selectedRun.session,
-                onResetProject: {
-                    viewModel.resetProject()
-                }
-            ) { session in
-                viewModel.configureSelectedRun(session: session)
-            }
-            .interactiveDismissDisabled()
         }
     }
 
@@ -265,7 +291,7 @@ public struct DarkroomTimerView: View {
         case .paused:
             viewModel.reset()
         case .idle, .finished:
-            isShowingSetup = true
+            navigationPath.append(.setup)
         case .running:
             break
         }
@@ -303,3 +329,18 @@ public struct DarkroomTimerView: View {
 #Preview {
     DarkroomTimerView()
 }
+
+#if canImport(UIKit)
+/// Umožní „swipe zleva doprava" (interaktivní pop) i když je systémový
+/// navigation bar skrytý – stejné chování jako v systémové aplikaci Nastavení.
+extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        interactivePopGestureRecognizer?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        viewControllers.count > 1
+    }
+}
+#endif

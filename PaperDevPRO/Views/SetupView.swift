@@ -8,6 +8,7 @@ struct SetupView: View {
 
     let initialSession: DevelopmentSession
     let onResetProject: () -> Void
+    let onOpenSettings: () -> Void
     let onApply: (DevelopmentSession) -> Void
 
     @State private var selectedPaper: Paper
@@ -35,19 +36,27 @@ struct SetupView: View {
     @State private var isFixerUsageSynced = true
     @State private var phaseDurationOverrides: [ProcessPhase: Int]
     @State private var activePicker: SetupPicker?
-    @State private var isShowingProjectResetConfirmation = false
-    @State private var isShowingSettings = false
+    @State private var pendingReset: ResetKind?
+    @State private var isNavigatingToSettings = false
+    @State private var isResettingProject = false
 
-    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+    private enum ResetKind {
+        case project
+        case setup
+    }
+
+    private let cardColor = DarkroomPalette.black
     private let dividerColor = Color(red: 1, green: 0, blue: 0).opacity(0.35)
 
     init(
         initialSession: DevelopmentSession,
         onResetProject: @escaping () -> Void = {},
+        onOpenSettings: @escaping () -> Void = {},
         onApply: @escaping (DevelopmentSession) -> Void
     ) {
         self.initialSession = initialSession
         self.onResetProject = onResetProject
+        self.onOpenSettings = onOpenSettings
         self.onApply = onApply
         _selectedPaper = State(initialValue: initialSession.paper)
         _selectedPaperSize = State(initialValue: initialSession.paperSize)
@@ -79,6 +88,7 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     topBar
+                        .padding(.top, 8)
                     projectResetButton
 
                     settingsSection(title: "Presety") {
@@ -106,7 +116,7 @@ struct SetupView: View {
                         divider
                         pickerRow(title: "Teplota", value: temperatureText(selectedDeveloperTemperature), picker: .developerTemperature)
                         divider
-                        readOnlyRow(title: "Čas", value: selectedDeveloperDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedDeveloperTemperature).displayText)
+                        timeRow(dilution: selectedDeveloperDilution, temperatureCelsius: selectedDeveloperTemperature)
                         divider
                         capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
                         divider
@@ -140,7 +150,7 @@ struct SetupView: View {
                         divider
                         pickerRow(title: "Teplota", value: temperatureText(selectedStopBathTemperature), picker: .stopBathTemperature)
                         divider
-                        readOnlyRow(title: "Čas", value: selectedStopBathDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedStopBathTemperature).displayText)
+                        timeRow(dilution: selectedStopBathDilution, temperatureCelsius: selectedStopBathTemperature)
                         divider
                         capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
                         divider
@@ -174,7 +184,7 @@ struct SetupView: View {
                         divider
                         pickerRow(title: "Teplota", value: temperatureText(selectedFixerTemperature), picker: .fixerTemperature)
                         divider
-                        readOnlyRow(title: "Čas", value: selectedFixerDilution.timeRange(for: selectedPaper, temperatureCelsius: selectedFixerTemperature).displayText)
+                        timeRow(dilution: selectedFixerDilution, temperatureCelsius: selectedFixerTemperature)
                         divider
                         capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
                         divider
@@ -214,38 +224,109 @@ struct SetupView: View {
                 }
                 .padding(20)
             }
+            .scrollIndicators(.hidden)
+
+            if let pendingReset {
+                resetConfirmationOverlay(for: pendingReset)
+            }
         }
         .preferredColorScheme(.dark)
         .statusBar(hidden: true)
+        .onAppear {
+            isNavigatingToSettings = false
+        }
+        .onDisappear {
+            guard !isNavigatingToSettings, !isResettingProject else { return }
+            onApply(computedSession)
+        }
         .sheet(item: $activePicker) { picker in
             pickerSheet(for: picker)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsSheetView()
-                .interactiveDismissDisabled()
-        }
-        .confirmationDialog(
-            "Opravdu resetovat celý projekt?",
-            isPresented: $isShowingProjectResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("RESET PROJEKTU", role: .destructive) {
-                onResetProject()
-                dismiss()
-            }
+    }
 
-            Button("ZRUŠIT", role: .cancel) { }
-        } message: {
-            Text("Smažou se všechny běžící papíry a projekt se vrátí do výchozího stavu.")
+    private func resetConfirmationOverlay(for kind: ResetKind) -> some View {
+        ZStack {
+            DarkroomPalette.black.opacity(0.9)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.15)) { pendingReset = nil }
+                }
+
+            VStack(spacing: 20) {
+                Text("Opravdu?")
+                    .font(.system(size: 28, weight: .bold))
+
+                Text(kind == .project
+                    ? "Smažou se všechny běžící papíry a projekt se vrátí do výchozího stavu."
+                    : "Setup se vrátí do výchozího nastavení.")
+                    .font(.system(size: 15, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .opacity(0.8)
+
+                VStack(spacing: 12) {
+                    confirmationChoiceButton(title: "BUDIŽ", filled: false) {
+                        performReset(kind)
+                    }
+
+                    confirmationChoiceButton(title: "NIKOLIVĚK", filled: true) {
+                        withAnimation(.easeInOut(duration: 0.15)) { pendingReset = nil }
+                    }
+                }
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(26)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 24).fill(DarkroomPalette.black))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red, lineWidth: 2)
+            )
+            .padding(32)
+        }
+    }
+
+    private func confirmationChoiceButton(
+        title: String,
+        filled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(filled ? DarkroomPalette.black : DarkroomPalette.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(filled ? DarkroomPalette.red : DarkroomPalette.black)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(DarkroomPalette.red, lineWidth: 2)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func performReset(_ kind: ResetKind) {
+        switch kind {
+        case .setup:
+            withAnimation(.easeInOut(duration: 0.15)) { pendingReset = nil }
+            resetToDefaults()
+        case .project:
+            isResettingProject = true
+            pendingReset = nil
+            onResetProject()
+            dismiss()
         }
     }
 
     private var topBar: some View {
         HStack {
             circularIconButton(systemName: "chevron.left") {
-                applySelection()
+                dismiss()
             }
 
             Spacer()
@@ -256,23 +337,28 @@ struct SetupView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
-                resetButton {
-                    resetToDefaults()
-                }
-
-                circularIconButton(systemName: "gearshape") {
-                    isShowingSettings = true
-                }
+            circularIconButton(systemName: "gearshape") {
+                isNavigatingToSettings = true
+                onOpenSettings()
             }
         }
     }
 
     private var projectResetButton: some View {
-        Button {
-            isShowingProjectResetConfirmation = true
-        } label: {
-            Text("RESET PROJEKTU")
+        HStack(spacing: 12) {
+            resetActionButton(title: "RESET PROJEKTU") {
+                withAnimation(.easeInOut(duration: 0.15)) { pendingReset = .project }
+            }
+
+            resetActionButton(title: "RESET SETUP") {
+                withAnimation(.easeInOut(duration: 0.15)) { pendingReset = .setup }
+            }
+        }
+    }
+
+    private func resetActionButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
@@ -346,11 +432,13 @@ struct SetupView: View {
             }
         case .developer:
             selectionSheet(title: "Vývojka") {
+                documentationLegend
                 ForEach(MockDarkroomDatabase.developers) { developer in
                     selectionButton(
                         title: developer.displayName,
                         subtitle: developer.dilutions.map(\.ratio).joined(separator: ", "),
-                        isSelected: developer.id == selectedDeveloper.id
+                        isSelected: developer.id == selectedDeveloper.id,
+                        isDocumented: developer.isDocumented(for: selectedPaper)
                     ) {
                         selectedDeveloper = developer
                         selectedDeveloperDilution = developer.dilutions[0]
@@ -380,11 +468,13 @@ struct SetupView: View {
             }
         case .stopBath:
             selectionSheet(title: "Přerušovač") {
+                documentationLegend
                 ForEach(MockDarkroomDatabase.stopBaths) { stopBath in
                     selectionButton(
                         title: stopBath.displayName,
                         subtitle: stopBath.dilutions.map(\.ratio).joined(separator: ", "),
-                        isSelected: stopBath.id == selectedStopBath.id
+                        isSelected: stopBath.id == selectedStopBath.id,
+                        isDocumented: stopBath.isDocumented(for: selectedPaper)
                     ) {
                         selectedStopBath = stopBath
                         selectedStopBathDilution = stopBath.dilutions[0]
@@ -414,11 +504,13 @@ struct SetupView: View {
             }
         case .fixer:
             selectionSheet(title: "Ustalovač") {
+                documentationLegend
                 ForEach(MockDarkroomDatabase.fixers) { fixer in
                     selectionButton(
                         title: fixer.displayName,
                         subtitle: fixer.dilutions.map(\.ratio).joined(separator: ", "),
-                        isSelected: fixer.id == selectedFixer.id
+                        isSelected: fixer.id == selectedFixer.id,
+                        isDocumented: fixer.isDocumented(for: selectedPaper)
                     ) {
                         selectedFixer = fixer
                         selectedFixerDilution = fixer.dilutions[0]
@@ -664,14 +756,36 @@ struct SetupView: View {
                 }
                 .padding(22)
             }
+            .scrollIndicators(.hidden)
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var documentationLegend: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Čas dle oficiálního datasheetu")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Jen přepočet – bez záruky")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+        }
+        .foregroundStyle(DarkroomPalette.red.opacity(0.75))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, 4)
     }
 
     private func selectionButton(
         title: String,
         subtitle: String?,
         isSelected: Bool,
+        isDocumented: Bool? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -690,6 +804,13 @@ struct SetupView: View {
                 }
 
                 Spacer()
+
+                if let isDocumented {
+                    Image(systemName: isDocumented ? "checkmark.seal.fill" : "exclamationmark.triangle")
+                        .font(.system(size: 16, weight: .bold))
+                        .opacity(isDocumented ? 1 : 0.8)
+                        .accessibilityLabel(isDocumented ? "Dle dokumentace" : "Přepočet bez záruky")
+                }
             }
             .foregroundStyle(DarkroomPalette.red)
             .padding(16)
@@ -718,7 +839,7 @@ struct SetupView: View {
             .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
+                    .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
             )
         }
     }
@@ -781,6 +902,42 @@ struct SetupView: View {
 
     private func readOnlyRow(title: String, value: String) -> some View {
         rowContent(title: title, value: value, showsChevron: false)
+    }
+
+    private func timeRow(dilution: ChemicalDilution, temperatureCelsius: Double) -> some View {
+        let documented = dilution.isDocumented(for: selectedPaper)
+        let value = dilution
+            .timeRange(for: selectedPaper, temperatureCelsius: temperatureCelsius)
+            .displayText
+
+        return HStack(spacing: 12) {
+            Text("Čas")
+                .font(.system(size: 18, weight: .semibold))
+
+            Spacer(minLength: 16)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(value)
+                        .font(.system(size: 18, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                    Image(systemName: documented ? "checkmark.seal.fill" : "exclamationmark.triangle")
+                        .font(.system(size: 14, weight: .bold))
+                        .opacity(documented ? 1 : 0.85)
+                }
+
+                Text(documented ? "Dle dokumentace" : "Přepočet – bez záruky")
+                    .font(.system(size: 12, weight: .semibold))
+                    .opacity(0.65)
+            }
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Čas \(value), \(documented ? "dle dokumentace" : "přepočet bez záruky")")
     }
 
     @ViewBuilder
@@ -891,18 +1048,6 @@ struct SetupView: View {
                 .frame(width: 56, height: 56)
                 .background(Circle().fill(cardColor))
                 .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func resetButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text("RESET")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(DarkroomPalette.red)
-                .frame(width: 64, height: 56)
-                .background(Capsule().fill(cardColor))
-                .overlay(Capsule().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -1133,11 +1278,6 @@ struct SetupView: View {
         }
     }
 
-    private func applySelection() {
-        onApply(computedSession)
-        dismiss()
-    }
-
     private func temperatureText(_ temperature: Double) -> String {
         settingsStore.formatTemperature(temperature)
     }
@@ -1215,11 +1355,11 @@ private enum UsageSyncTarget {
     case fixer
 }
 
-private struct SettingsSheetView: View {
+struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
 
-    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+    private let cardColor = DarkroomPalette.black
     private var copy: AppCopy { settingsStore.copy }
 
     private var appVersion: String {
@@ -1239,16 +1379,6 @@ private struct SettingsSheetView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         settingsCard {
-                            linkRow(title: copy.redDisplay) {
-                                SystemSettingsOpener.openColorFilters()
-                            }
-                            settingsDivider
-                            linkRow(title: copy.guidedAccess) {
-                                SystemSettingsOpener.openGuidedAccess()
-                            }
-                        }
-
-                        settingsCard {
                             toggleRow(title: copy.sound, isOn: $settingsStore.isSoundEnabled)
                             settingsDivider
                             toggleRow(title: copy.haptics, isOn: $settingsStore.isHapticsEnabled)
@@ -1267,12 +1397,11 @@ private struct SettingsSheetView: View {
                                         Text("\(Int((settingsStore.darkroomBrightness * 100).rounded())) %")
                                             .font(.system(size: 18, weight: .bold))
                                     }
-                                    Slider(
+                                    redSlider(
                                         value: $settingsStore.darkroomBrightness,
                                         in: 0.05...0.6,
                                         step: 0.05
                                     )
-                                    .tint(DarkroomPalette.red)
                                 }
                                 .foregroundStyle(DarkroomPalette.red)
                                 .padding(.horizontal, 18)
@@ -1327,6 +1456,7 @@ private struct SettingsSheetView: View {
                     }
                     .padding(.bottom, 24)
                 }
+                .scrollIndicators(.hidden)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -1369,47 +1499,90 @@ private struct SettingsSheetView: View {
         .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(DarkroomPalette.red.opacity(0.2), lineWidth: 1)
+                .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
         )
     }
 
     private var settingsDivider: some View {
         Rectangle()
-            .fill(DarkroomPalette.red.opacity(0.2))
+            .fill(DarkroomPalette.red.opacity(0.35))
             .frame(height: 1)
             .padding(.leading, 18)
     }
 
     private func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
-            Text(title)
-                .font(.system(size: 18, weight: isOn.wrappedValue ? .bold : .regular))
-        }
-        .tint(DarkroomPalette.red)
-        .foregroundStyle(DarkroomPalette.red)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-    }
-
-    private func linkRow(title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isOn.wrappedValue.toggle()
+            }
+        } label: {
+            HStack {
                 Text(title)
-                    .font(.system(size: 18, weight: .bold))
-
-                Spacer(minLength: 16)
-
-                Text(copy.openSettings)
-                    .font(.system(size: 18, weight: .regular))
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 18, weight: isOn.wrappedValue ? .bold : .regular))
+                Spacer()
+                redSwitch(isOn: isOn.wrappedValue)
             }
             .foregroundStyle(DarkroomPalette.red)
             .padding(.horizontal, 18)
-            .padding(.vertical, 16)
+            .padding(.vertical, 14)
         }
         .buttonStyle(.plain)
+    }
+
+    private func redSwitch(isOn: Bool) -> some View {
+        Capsule()
+            .fill(isOn ? DarkroomPalette.red.opacity(0.35) : DarkroomPalette.black)
+            .overlay(
+                Capsule()
+                    .stroke(DarkroomPalette.red, lineWidth: 2)
+            )
+            .frame(width: 52, height: 32)
+            .overlay(
+                Circle()
+                    .fill(DarkroomPalette.red)
+                    .frame(width: 22, height: 22)
+                    .padding(.horizontal, 5)
+                    .frame(maxWidth: .infinity, alignment: isOn ? .trailing : .leading)
+            )
+            .animation(.easeInOut(duration: 0.15), value: isOn)
+    }
+
+    private func redSlider(value: Binding<Double>, in range: ClosedRange<Double>, step: Double) -> some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let span = range.upperBound - range.lowerBound
+            let fraction = span > 0 ? CGFloat((value.wrappedValue - range.lowerBound) / span) : 0
+            let clampedFraction = min(max(0, fraction), 1)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(DarkroomPalette.black)
+                    .overlay(Capsule().stroke(DarkroomPalette.red.opacity(0.6), lineWidth: 1))
+                    .frame(height: 6)
+
+                Capsule()
+                    .fill(DarkroomPalette.red)
+                    .frame(width: clampedFraction * width, height: 6)
+
+                Circle()
+                    .fill(DarkroomPalette.red)
+                    .frame(width: 24, height: 24)
+                    .offset(x: min(max(0, clampedFraction * width - 12), width - 24))
+            }
+            .frame(height: 24)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { drag in
+                        guard width > 0 else { return }
+                        let newFraction = min(max(0, drag.location.x / width), 1)
+                        let raw = range.lowerBound + Double(newFraction) * span
+                        let stepped = (raw / step).rounded() * step
+                        value.wrappedValue = min(range.upperBound, max(range.lowerBound, stepped))
+                    }
+            )
+        }
+        .frame(height: 24)
     }
 
     private func optionRow(title: String, value: String, action: @escaping () -> Void) -> some View {
@@ -1493,7 +1666,7 @@ private struct PresetsSheetView: View {
     let session: DevelopmentSession
     let onLoad: (DevelopmentSession) -> Void
 
-    private let cardColor = Color(red: 0.08, green: 0.08, blue: 0.08)
+    private let cardColor = DarkroomPalette.black
 
     var body: some View {
         ZStack {
@@ -1526,6 +1699,7 @@ private struct PresetsSheetView: View {
                 }
                 .padding(22)
             }
+            .scrollIndicators(.hidden)
         }
         .preferredColorScheme(.dark)
     }

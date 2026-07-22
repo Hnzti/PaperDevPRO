@@ -256,35 +256,3 @@ struct AppCopy {
     }
 }
 
-enum SystemSettingsOpener {
-    static func openColorFilters() {
-        open(candidates: [
-            "App-prefs:root=ACCESSIBILITY&path=DISPLAY_AND_TEXT/DISPLAY_FILTER_COLOR",
-            "prefs:root=ACCESSIBILITY&path=DISPLAY_AND_TEXT/DISPLAY_FILTER_COLOR",
-            "App-prefs:root=ACCESSIBILITY&path=DISPLAY_AND_TEXT#DISPLAY_FILTER_COLOR",
-            "prefs:root=ACCESSIBILITY&path=DISPLAY_AND_TEXT#DISPLAY_FILTER_COLOR"
-        ])
-    }
-
-    static func openGuidedAccess() {
-        open(candidates: [
-            "App-prefs:root=ACCESSIBILITY&path=GUIDED_ACCESS_TITLE",
-            "prefs:root=ACCESSIBILITY&path=GUIDED_ACCESS_TITLE",
-            "App-prefs:root=ACCESSIBILITY",
-            "prefs:root=ACCESSIBILITY"
-        ])
-    }
-
-    #if canImport(UIKit)
-    private static func open(candidates: [String]) {
-        guard let urlString = candidates.first, let url = URL(string: urlString) else { return }
-
-        UIApplication.shared.open(url, options: [:]) { success in
-            guard !success else { return }
-            open(candidates: Array(candidates.dropFirst()))
-        }
-    }
-    #else
-    private static func open(candidates: [String]) {}
-    #endif
-}

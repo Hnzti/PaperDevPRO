@@ -219,6 +219,21 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         return Array(Int(minimum.rounded())...Int(maximum.rounded())).map(Double.init)
     }
 
+    /// True když je pro daný papír v datasheetu explicitní čas (přímo pro papír
+    /// nebo pro jeho typ). False znamená, že se čas jen dopočítává z jiných
+    /// pravidel = „bez záruky".
+    public func isDocumented(for paper: Paper) -> Bool {
+        if timeRules.contains(where: { $0.paperID == paper.id }) {
+            return true
+        }
+
+        if timeRules.contains(where: { $0.paperType == paper.type }) {
+            return true
+        }
+
+        return false
+    }
+
     public func timeRange(for paper: Paper, temperatureCelsius: Double) -> TimeRange {
         let rules = matchingRules(for: paper).sorted { $0.temperatureCelsius < $1.temperatureCelsius }
 
@@ -440,6 +455,12 @@ public struct Chemical: Identifiable, Codable, Hashable {
 
     public var displayName: String {
         "\(manufacturer) \(name)"
+    }
+
+    /// True když je pro daný papír zdokumentovaná alespoň jedna kombinace
+    /// (ředění) v datasheetu.
+    public func isDocumented(for paper: Paper) -> Bool {
+        dilutions.contains { $0.isDocumented(for: paper) }
     }
 
     public init(
