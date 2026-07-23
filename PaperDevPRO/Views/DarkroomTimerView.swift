@@ -94,6 +94,23 @@ public struct DarkroomTimerView: View {
                             .padding(.top, 28)
 
                         Spacer(minLength: 0)
+
+                        VStack(spacing: 12) {
+                            Text("PaperDeveloper")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundStyle(DarkroomPalette.red)
+
+                            Text(copy.safelightWarning)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(DarkroomPalette.red.opacity(0.85))
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 8)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("PaperDeveloper. \(copy.safelightWarning)")
+
+                        Spacer(minLength: 0)
                     }
 
                     controlButtons
@@ -163,16 +180,10 @@ public struct DarkroomTimerView: View {
             hintLine(copy.controlsHintAddPaper)
             hintLine(copy.controlsHintAddStrip)
             hintLine(copy.controlsHintDelete)
-
-            Text(copy.safelightWarning)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(DarkroomPalette.red.opacity(0.8))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(copy.controlsHint)\n\(copy.safelightWarning)")
+        .accessibilityLabel(copy.controlsHint)
     }
 
     private func hintLine(_ text: String) -> some View {

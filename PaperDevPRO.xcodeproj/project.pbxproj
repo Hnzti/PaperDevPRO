@@ -18,6 +18,8 @@
 		AA0000000000000000000009 /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000019 /* PresetStore.swift */; };
 		AA000000000000000000000A /* DarkroomSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001A /* DarkroomSettingsStore.swift */; };
 		AA000000000000000000000B /* AppCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001B /* AppCopy.swift */; };
+		AA000000000000000000000C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001C /* Assets.xcassets */; };
+		AA000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001D /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +35,8 @@
 		AA0000000000000000000019 /* PresetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetStore.swift; sourceTree = "<group>"; };
 		AA000000000000000000001A /* DarkroomSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomSettingsStore.swift; sourceTree = "<group>"; };
 		AA000000000000000000001B /* AppCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCopy.swift; sourceTree = "<group>"; };
+		AA000000000000000000001C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000000000000000000001D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +63,8 @@
 			children = (
 				AA0000000000000000000011 /* PaperDevPROApp.swift */,
 				AA0000000000000000000012 /* ContentView.swift */,
+				AA000000000000000000001C /* Assets.xcassets */,
+				AA000000000000000000001D /* PrivacyInfo.xcprivacy */,
 				AA0000000000000000000032 /* Models */,
 				AA0000000000000000000033 /* Data */,
 				AA0000000000000000000034 /* ViewModels */,
@@ -170,6 +176,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA000000000000000000000C /* Assets.xcassets in Resources */,
+				AA000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -315,6 +323,7 @@
 		AA0000000000000000000082 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -333,7 +342,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevPRO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -346,6 +355,7 @@
 		AA0000000000000000000083 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -364,7 +374,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevPRO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
