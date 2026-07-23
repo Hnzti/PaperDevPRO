@@ -23,7 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AA0000000000000000000010 /* PaperDevPRO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaperDevPRO.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000010 /* PaperDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaperDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000011 /* PaperDevPROApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperDevPROApp.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* DarkroomModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomModels.swift; sourceTree = "<group>"; };
@@ -113,7 +113,7 @@
 		AA0000000000000000000036 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000010 /* PaperDevPRO.app */,
+				AA0000000000000000000010 /* PaperDev.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,9 +121,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA0000000000000000000040 /* PaperDevPRO */ = {
+		AA0000000000000000000040 /* PaperDev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA0000000000000000000070 /* Build configuration list for PBXNativeTarget "PaperDevPRO" */;
+			buildConfigurationList = AA0000000000000000000070 /* Build configuration list for PBXNativeTarget "PaperDev" */;
 			buildPhases = (
 				AA0000000000000000000050 /* Sources */,
 				AA0000000000000000000020 /* Frameworks */,
@@ -133,9 +133,9 @@
 			);
 			dependencies = (
 			);
-			name = PaperDevPRO;
+			name = PaperDev;
 			productName = PaperDevPRO;
-			productReference = AA0000000000000000000010 /* PaperDevPRO.app */;
+			productReference = AA0000000000000000000010 /* PaperDev.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -166,7 +166,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA0000000000000000000040 /* PaperDevPRO */,
+				AA0000000000000000000040 /* PaperDev */,
 			);
 		};
 /* End PBXProject section */
@@ -396,7 +396,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA0000000000000000000070 /* Build configuration list for PBXNativeTarget "PaperDevPRO" */ = {
+		AA0000000000000000000070 /* Build configuration list for PBXNativeTarget "PaperDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA0000000000000000000082 /* Debug */,
