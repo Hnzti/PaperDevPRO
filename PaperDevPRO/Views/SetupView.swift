@@ -13,6 +13,10 @@ struct SetupView: View {
 
     @State private var selectedPaper: Paper
     @State private var selectedPaperSize: PaperSize
+    @State private var selectedTestStripPaper: Paper
+    @State private var selectedTestStripPaperSize: PaperSize
+    @State private var customWidthCentimeters: Double = 2.5
+    @State private var customHeightCentimeters: Double = 10
     @State private var selectedDeveloper: Chemical
     @State private var selectedDeveloperDilution: ChemicalDilution
     @State private var selectedDeveloperTemperature: Double
@@ -28,6 +32,14 @@ struct SetupView: View {
     @State private var transferAfterDeveloperSeconds: Int
     @State private var transferAfterStopBathSeconds: Int
     @State private var transferAfterFixerSeconds: Int
+    @State private var washTemperature: Double
+    @State private var isToningEnabled: Bool
+    @State private var selectedToner: Chemical
+    @State private var selectedTonerDilution: ChemicalDilution
+    @State private var selectedTonerTemperature: Double
+    @State private var tonerVolumeMilliliters: Int
+    @State private var toningSeconds: Int
+    @State private var isTonerUsageSynced = true
     @State private var isDeveloperTransferSynced = true
     @State private var isStopBathTransferSynced = true
     @State private var isFixerTransferSynced = true
@@ -47,6 +59,7 @@ struct SetupView: View {
 
     private let cardColor = DarkroomPalette.black
     private let dividerColor = Color(red: 1, green: 0, blue: 0).opacity(0.35)
+    private var copy: AppCopy { settingsStore.copy }
 
     init(
         initialSession: DevelopmentSession,
@@ -60,6 +73,10 @@ struct SetupView: View {
         self.onApply = onApply
         _selectedPaper = State(initialValue: initialSession.paper)
         _selectedPaperSize = State(initialValue: initialSession.paperSize)
+        _selectedTestStripPaper = State(initialValue: initialSession.testStripPaper)
+        _selectedTestStripPaperSize = State(initialValue: initialSession.testStripPaperSize)
+        _customWidthCentimeters = State(initialValue: initialSession.testStripPaperSize.widthCentimeters)
+        _customHeightCentimeters = State(initialValue: initialSession.testStripPaperSize.heightCentimeters)
         _selectedDeveloper = State(initialValue: initialSession.developer)
         _selectedDeveloperDilution = State(initialValue: initialSession.developerDilution)
         _selectedDeveloperTemperature = State(initialValue: initialSession.developerTemperatureCelsius)
@@ -75,6 +92,14 @@ struct SetupView: View {
         _transferAfterDeveloperSeconds = State(initialValue: Int(initialSession.transferAfterDeveloperDuration.rounded()))
         _transferAfterStopBathSeconds = State(initialValue: Int(initialSession.transferAfterStopBathDuration.rounded()))
         _transferAfterFixerSeconds = State(initialValue: Int(initialSession.transferAfterFixerDuration.rounded()))
+        _washTemperature = State(initialValue: initialSession.washTemperatureCelsius)
+        _isToningEnabled = State(initialValue: initialSession.isToningEnabled)
+        let toner = initialSession.toner ?? MockDarkroomDatabase.toners.first ?? initialSession.fixer
+        _selectedToner = State(initialValue: toner)
+        _selectedTonerDilution = State(initialValue: initialSession.tonerDilution ?? toner.dilutions[0])
+        _selectedTonerTemperature = State(initialValue: initialSession.toningTemperatureCelsius)
+        _tonerVolumeMilliliters = State(initialValue: initialSession.toningVolumeMilliliters)
+        _toningSeconds = State(initialValue: Int(initialSession.toningDuration.rounded()))
         _phaseDurationOverrides = State(
             initialValue: initialSession.phaseDurationOverrides.mapValues { Int($0.rounded()) }
         )
@@ -91,30 +116,36 @@ struct SetupView: View {
                         .padding(.top, 8)
                     projectResetButton
 
-                    settingsSection(title: "Presety") {
+                    settingsSection(title: copy.sectionPresets) {
                         pickerRow(
-                            title: "Preset",
-                            value: presetStore.presets.isEmpty ? "Žádný uložený" : "\(presetStore.presets.count) uložených",
+                            title: copy.rowPreset,
+                            value: presetStore.presets.isEmpty ? copy.noPresetSaved : copy.presetsSavedCount(presetStore.presets.count),
                             picker: .presets
                         )
                     }
 
-                    settingsSection(title: "Papír") {
-                        pickerRow(title: "Typ papíru", value: selectedPaper.displayName, picker: .paper)
+                    settingsSection(title: copy.sectionPaper) {
+                        pickerRow(title: copy.rowPaperType, value: selectedPaper.displayName, picker: .paper)
                         divider
-                        pickerRow(title: "Rozměr", value: selectedPaperSize.displayName, picker: .paperSize)
+                        pickerRow(title: copy.rowSize, value: selectedPaperSize.displayName, picker: .paperSize)
                     }
 
-                    settingsSection(title: "Vývojka") {
-                        pickerRow(title: "Chemie", value: selectedDeveloper.displayName, picker: .developer)
+                    settingsSection(title: copy.sectionTestStripPaper) {
+                        pickerRow(title: copy.rowPaperType, value: selectedTestStripPaper.displayName, picker: .testStripPaper)
                         divider
-                        pickerRow(title: "Ředění", value: selectedDeveloperDilution.ratio, picker: .developerDilution)
+                        pickerRow(title: copy.rowSize, value: selectedTestStripPaperSize.displayName, picker: .testStripPaperSize)
+                    }
+
+                    settingsSection(title: copy.sectionDeveloper) {
+                        pickerRow(title: copy.rowChemistry, value: selectedDeveloper.displayName, picker: .developer)
                         divider
-                        pickerRow(title: "Objem", value: millilitersText(developerVolumeMilliliters), picker: .developerVolume)
+                        pickerRow(title: copy.rowDilution, value: selectedDeveloperDilution.ratio, picker: .developerDilution)
+                        divider
+                        pickerRow(title: copy.rowVolume, value: millilitersText(developerVolumeMilliliters), picker: .developerVolume)
                         divider
                         mixRows(dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
                         divider
-                        pickerRow(title: "Teplota", value: temperatureText(selectedDeveloperTemperature), picker: .developerTemperature)
+                        temperatureRow(dilution: selectedDeveloperDilution, temperature: selectedDeveloperTemperature, picker: .developerTemperature)
                         divider
                         timeRow(dilution: selectedDeveloperDilution, temperatureCelsius: selectedDeveloperTemperature)
                         divider
@@ -139,16 +170,16 @@ struct SetupView: View {
                         }
                     }
 
-                    settingsSection(title: "Přerušovač") {
-                        pickerRow(title: "Chemie", value: selectedStopBath.displayName, picker: .stopBath)
+                    settingsSection(title: copy.sectionStopBath) {
+                        pickerRow(title: copy.rowChemistry, value: selectedStopBath.displayName, picker: .stopBath)
                         divider
-                        pickerRow(title: "Ředění", value: selectedStopBathDilution.ratio, picker: .stopBathDilution)
+                        pickerRow(title: copy.rowDilution, value: selectedStopBathDilution.ratio, picker: .stopBathDilution)
                         divider
-                        pickerRow(title: "Objem", value: millilitersText(stopBathVolumeMilliliters), picker: .stopBathVolume)
+                        pickerRow(title: copy.rowVolume, value: millilitersText(stopBathVolumeMilliliters), picker: .stopBathVolume)
                         divider
                         mixRows(dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
                         divider
-                        pickerRow(title: "Teplota", value: temperatureText(selectedStopBathTemperature), picker: .stopBathTemperature)
+                        temperatureRow(dilution: selectedStopBathDilution, temperature: selectedStopBathTemperature, picker: .stopBathTemperature)
                         divider
                         timeRow(dilution: selectedStopBathDilution, temperatureCelsius: selectedStopBathTemperature)
                         divider
@@ -173,16 +204,16 @@ struct SetupView: View {
                         }
                     }
 
-                    settingsSection(title: "Ustalovač") {
-                        pickerRow(title: "Chemie", value: selectedFixer.displayName, picker: .fixer)
+                    settingsSection(title: copy.sectionFixer) {
+                        pickerRow(title: copy.rowChemistry, value: selectedFixer.displayName, picker: .fixer)
                         divider
-                        pickerRow(title: "Ředění", value: selectedFixerDilution.ratio, picker: .fixerDilution)
+                        pickerRow(title: copy.rowDilution, value: selectedFixerDilution.ratio, picker: .fixerDilution)
                         divider
-                        pickerRow(title: "Objem", value: millilitersText(fixerVolumeMilliliters), picker: .fixerVolume)
+                        pickerRow(title: copy.rowVolume, value: millilitersText(fixerVolumeMilliliters), picker: .fixerVolume)
                         divider
                         mixRows(dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
                         divider
-                        pickerRow(title: "Teplota", value: temperatureText(selectedFixerTemperature), picker: .fixerTemperature)
+                        temperatureRow(dilution: selectedFixerDilution, temperature: selectedFixerTemperature, picker: .fixerTemperature)
                         divider
                         timeRow(dilution: selectedFixerDilution, temperatureCelsius: selectedFixerTemperature)
                         divider
@@ -207,7 +238,51 @@ struct SetupView: View {
                         }
                     }
 
-                    settingsSection(title: "Proces") {
+                    settingsSection(title: copy.sectionWash) {
+                        pickerRow(
+                            title: copy.rowWaterTemperature,
+                            value: temperatureText(washTemperature),
+                            picker: .washTemperature
+                        )
+                        divider
+                        readOnlyRow(
+                            title: copy.rowWashTime,
+                            value: durationText(for: selectedPaper.washDuration(for: washTemperature))
+                        )
+                    }
+
+                    settingsSection(title: copy.sectionToning) {
+                        toningToggleRow
+
+                        if isToningEnabled {
+                            divider
+                            pickerRow(title: copy.rowChemistry, value: selectedToner.displayName, picker: .toner)
+                            divider
+                            pickerRow(title: copy.rowDilution, value: selectedTonerDilution.ratio, picker: .tonerDilution)
+                            divider
+                            pickerRow(title: copy.rowVolume, value: millilitersText(tonerVolumeMilliliters), picker: .tonerVolume)
+                            divider
+                            mixRows(dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
+                            divider
+                            pickerRow(title: copy.rowTemperature, value: temperatureText(selectedTonerTemperature), picker: .tonerTemperature)
+                            divider
+                            pickerRow(title: copy.rowTime, value: durationText(for: TimeInterval(toningSeconds)), picker: .toningDuration)
+                            divider
+                            capacityRow(chemical: selectedToner, dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
+                            divider
+                            usageRow(
+                                chemical: selectedToner,
+                                dilution: selectedTonerDilution,
+                                isSynced: isTonerUsageSynced
+                            ) {
+                                isTonerUsageSynced.toggle()
+                            } onReset: {
+                                usageStore.reset(chemical: selectedToner, dilution: selectedTonerDilution)
+                            }
+                        }
+                    }
+
+                    settingsSection(title: copy.sectionProcess) {
                         ForEach(Array(computedSession.resolvedPhases().enumerated()), id: \.element.id) { index, phase in
                             pickerRow(
                                 title: displayTitle(for: phase.phase),
@@ -242,7 +317,17 @@ struct SetupView: View {
         .sheet(item: $activePicker) { picker in
             pickerSheet(for: picker)
                 .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(DarkroomPalette.black)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    Capsule()
+                        .fill(DarkroomPalette.red)
+                        .frame(width: 40, height: 5)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
+                        .padding(.bottom, 6)
+                        .background(DarkroomPalette.black)
+                }
         }
     }
 
@@ -255,22 +340,20 @@ struct SetupView: View {
                 }
 
             VStack(spacing: 20) {
-                Text("Opravdu?")
+                Text(copy.confirmTitle)
                     .font(.system(size: 28, weight: .bold))
 
-                Text(kind == .project
-                    ? "Smažou se všechny běžící papíry a projekt se vrátí do výchozího stavu."
-                    : "Setup se vrátí do výchozího nastavení.")
+                Text(kind == .project ? copy.confirmProjectMessage : copy.confirmSetupMessage)
                     .font(.system(size: 15, weight: .semibold))
                     .multilineTextAlignment(.center)
                     .opacity(0.8)
 
                 VStack(spacing: 12) {
-                    confirmationChoiceButton(title: "BUDIŽ", filled: false) {
+                    confirmationChoiceButton(title: copy.confirmYes, filled: false) {
                         performReset(kind)
                     }
 
-                    confirmationChoiceButton(title: "NIKOLIVĚK", filled: true) {
+                    confirmationChoiceButton(title: copy.confirmNo, filled: true) {
                         withAnimation(.easeInOut(duration: 0.15)) { pendingReset = nil }
                     }
                 }
@@ -331,7 +414,7 @@ struct SetupView: View {
 
             Spacer()
 
-            Text("Setup")
+            Text(copy.setupTitle)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
 
@@ -346,11 +429,11 @@ struct SetupView: View {
 
     private var projectResetButton: some View {
         HStack(spacing: 12) {
-            resetActionButton(title: "RESET PROJEKTU") {
+            resetActionButton(title: copy.resetProject) {
                 withAnimation(.easeInOut(duration: 0.15)) { pendingReset = .project }
             }
 
-            resetActionButton(title: "RESET SETUP") {
+            resetActionButton(title: copy.resetSetup) {
                 withAnimation(.easeInOut(duration: 0.15)) { pendingReset = .setup }
             }
         }
@@ -375,6 +458,8 @@ struct SetupView: View {
         DevelopmentSession(
             paper: selectedPaper,
             paperSize: selectedPaperSize,
+            testStripPaper: selectedTestStripPaper,
+            testStripPaperSize: selectedTestStripPaperSize,
             developer: selectedDeveloper,
             developerDilution: selectedDeveloperDilution,
             stopBath: selectedStopBath,
@@ -390,6 +475,13 @@ struct SetupView: View {
             transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
             transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
             transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds),
+            washTemperatureCelsius: washTemperature,
+            isToningEnabled: isToningEnabled,
+            toner: isToningEnabled ? selectedToner : nil,
+            tonerDilution: isToningEnabled ? selectedTonerDilution : nil,
+            toningTemperatureCelsius: selectedTonerTemperature,
+            toningVolumeMilliliters: tonerVolumeMilliliters,
+            toningDuration: TimeInterval(toningSeconds),
             phaseDurationOverrides: phaseDurationOverrides.mapValues(TimeInterval.init)
         )
     }
@@ -403,35 +495,82 @@ struct SetupView: View {
                 activePicker = nil
             }
         case .paper:
-            selectionSheet(title: "Papír") {
+            selectionSheet(title: copy.pickPaper) {
                 ForEach(MockDarkroomDatabase.papers) { paper in
                     selectionButton(
                         title: paper.displayName,
                         subtitle: paper.type.displayName,
                         isSelected: paper.id == selectedPaper.id
                     ) {
+                        let previousSize = selectedPaperSize
                         selectedPaper = paper
-                        selectedPaperSize = paper.availableSizes.first ?? selectedPaperSize
+                        if paper.availableSizes.contains(where: { $0.id == previousSize.id }) {
+                            selectedPaperSize = previousSize
+                        } else if isCustomPaperSize(previousSize, relativeTo: paper) {
+                            selectedPaperSize = previousSize
+                        } else {
+                            selectedPaperSize = paper.availableSizes.first ?? previousSize
+                        }
                         normalizeTemperatures()
                         activePicker = nil
                     }
                 }
             }
         case .paperSize:
-            selectionSheet(title: "Rozměr") {
-                ForEach(selectedPaper.availableSizes) { size in
+            sizeSelectionSheet(
+                title: copy.pickSize,
+                paper: selectedPaper,
+                selectedSize: selectedPaperSize
+            ) { size in
+                selectedPaperSize = size
+            } onCustom: {
+                customWidthCentimeters = snappedCustomSize(selectedPaperSize.widthCentimeters)
+                customHeightCentimeters = snappedCustomSize(selectedPaperSize.heightCentimeters)
+                activePicker = .customPaperSize
+            }
+        case .customPaperSize:
+            customSizePickerSheet { size in
+                selectedPaperSize = size
+            }
+        case .testStripPaper:
+            selectionSheet(title: copy.pickPaper) {
+                ForEach(MockDarkroomDatabase.papers) { paper in
                     selectionButton(
-                        title: size.displayName,
-                        subtitle: nil,
-                        isSelected: size.id == selectedPaperSize.id
+                        title: paper.displayName,
+                        subtitle: paper.type.displayName,
+                        isSelected: paper.id == selectedTestStripPaper.id
                     ) {
-                        selectedPaperSize = size
+                        let previousSize = selectedTestStripPaperSize
+                        selectedTestStripPaper = paper
+                        if paper.availableSizes.contains(where: { $0.id == previousSize.id }) {
+                            selectedTestStripPaperSize = previousSize
+                        } else if isCustomPaperSize(previousSize, relativeTo: paper) {
+                            selectedTestStripPaperSize = previousSize
+                        } else {
+                            selectedTestStripPaperSize = paper.availableSizes.first ?? previousSize
+                        }
                         activePicker = nil
                     }
                 }
             }
+        case .testStripPaperSize:
+            sizeSelectionSheet(
+                title: copy.pickSize,
+                paper: selectedTestStripPaper,
+                selectedSize: selectedTestStripPaperSize
+            ) { size in
+                selectedTestStripPaperSize = size
+            } onCustom: {
+                customWidthCentimeters = snappedCustomSize(selectedTestStripPaperSize.widthCentimeters)
+                customHeightCentimeters = snappedCustomSize(selectedTestStripPaperSize.heightCentimeters)
+                activePicker = .customTestStripPaperSize
+            }
+        case .customTestStripPaperSize:
+            customSizePickerSheet { size in
+                selectedTestStripPaperSize = size
+            }
         case .developer:
-            selectionSheet(title: "Vývojka") {
+            selectionSheet(title: copy.pickDeveloper) {
                 documentationLegend
                 ForEach(MockDarkroomDatabase.developers) { developer in
                     selectionButton(
@@ -449,7 +588,7 @@ struct SetupView: View {
             }
         case .developerDilution:
             dilutionSheet(
-                title: "Ředění vývojky",
+                title: copy.pickDeveloperDilution,
                 dilutions: selectedDeveloper.dilutions,
                 selectedDilution: selectedDeveloperDilution
             ) { dilution in
@@ -457,17 +596,17 @@ struct SetupView: View {
                 selectedDeveloperTemperature = firstTemperature(for: dilution)
             }
         case .developerVolume:
-            volumePickerSheet(title: "Objem vývojky", milliliters: $developerVolumeMilliliters)
+            volumePickerSheet(title: copy.pickDeveloperVolume, milliliters: $developerVolumeMilliliters)
         case .developerTemperature:
             temperatureSheet(
-                title: "Teplota vývojky",
+                title: copy.pickDeveloperTemperature,
                 temperatures: availableTemperatures(for: selectedDeveloperDilution),
                 selectedTemperature: selectedDeveloperTemperature
             ) { temperature in
                 selectedDeveloperTemperature = temperature
             }
         case .stopBath:
-            selectionSheet(title: "Přerušovač") {
+            selectionSheet(title: copy.pickStopBath) {
                 documentationLegend
                 ForEach(MockDarkroomDatabase.stopBaths) { stopBath in
                     selectionButton(
@@ -485,7 +624,7 @@ struct SetupView: View {
             }
         case .stopBathDilution:
             dilutionSheet(
-                title: "Ředění přerušovače",
+                title: copy.pickStopBathDilution,
                 dilutions: selectedStopBath.dilutions,
                 selectedDilution: selectedStopBathDilution
             ) { dilution in
@@ -493,17 +632,17 @@ struct SetupView: View {
                 selectedStopBathTemperature = firstTemperature(for: dilution)
             }
         case .stopBathVolume:
-            volumePickerSheet(title: "Objem přerušovače", milliliters: $stopBathVolumeMilliliters)
+            volumePickerSheet(title: copy.pickStopBathVolume, milliliters: $stopBathVolumeMilliliters)
         case .stopBathTemperature:
             temperatureSheet(
-                title: "Teplota přerušovače",
+                title: copy.pickStopBathTemperature,
                 temperatures: availableTemperatures(for: selectedStopBathDilution),
                 selectedTemperature: selectedStopBathTemperature
             ) { temperature in
                 selectedStopBathTemperature = temperature
             }
         case .fixer:
-            selectionSheet(title: "Ustalovač") {
+            selectionSheet(title: copy.pickFixer) {
                 documentationLegend
                 ForEach(MockDarkroomDatabase.fixers) { fixer in
                     selectionButton(
@@ -521,7 +660,7 @@ struct SetupView: View {
             }
         case .fixerDilution:
             dilutionSheet(
-                title: "Ředění ustalovače",
+                title: copy.pickFixerDilution,
                 dilutions: selectedFixer.dilutions,
                 selectedDilution: selectedFixerDilution
             ) { dilution in
@@ -529,10 +668,10 @@ struct SetupView: View {
                 selectedFixerTemperature = firstTemperature(for: dilution)
             }
         case .fixerVolume:
-            volumePickerSheet(title: "Objem ustalovače", milliliters: $fixerVolumeMilliliters)
+            volumePickerSheet(title: copy.pickFixerVolume, milliliters: $fixerVolumeMilliliters)
         case .fixerTemperature:
             temperatureSheet(
-                title: "Teplota ustalovače",
+                title: copy.pickFixerTemperature,
                 temperatures: availableTemperatures(for: selectedFixerDilution),
                 selectedTemperature: selectedFixerTemperature
             ) { temperature in
@@ -540,33 +679,80 @@ struct SetupView: View {
             }
         case .transferAfterDeveloper:
             durationPickerSheet(
-                title: "Přendání do přerušovače",
+                title: copy.pickTransferToStopBath,
                 totalSeconds: transferSecondsBinding(for: .afterDeveloper)
             )
         case .transferAfterStopBath:
             durationPickerSheet(
-                title: "Přendání do ustalovače",
+                title: copy.pickTransferToFixer,
                 totalSeconds: transferSecondsBinding(for: .afterStopBath)
             )
         case .transferAfterFixer:
             durationPickerSheet(
-                title: "Přendání do praní",
+                title: copy.pickTransferToWash,
                 totalSeconds: transferSecondsBinding(for: .afterFixer)
             )
+        case .washTemperature:
+            temperatureSheet(
+                title: copy.pickWaterTemperature,
+                temperatures: Array(stride(from: 5.0, through: 30.0, by: 1.0)),
+                selectedTemperature: washTemperature
+            ) { temperature in
+                washTemperature = temperature
+            }
+        case .toner:
+            selectionSheet(title: copy.pickToner) {
+                ForEach(MockDarkroomDatabase.toners) { toner in
+                    selectionButton(
+                        title: toner.displayName,
+                        subtitle: toner.dilutions.map(\.ratio).joined(separator: ", "),
+                        isSelected: toner.id == selectedToner.id
+                    ) {
+                        selectedToner = toner
+                        selectedTonerDilution = toner.dilutions[0]
+                        activePicker = nil
+                    }
+                }
+            }
+        case .tonerDilution:
+            dilutionSheet(
+                title: copy.pickTonerDilution,
+                dilutions: selectedToner.dilutions,
+                selectedDilution: selectedTonerDilution
+            ) { dilution in
+                selectedTonerDilution = dilution
+            }
+        case .tonerVolume:
+            volumePickerSheet(title: copy.pickTonerVolume, milliliters: $tonerVolumeMilliliters)
+        case .tonerTemperature:
+            temperatureSheet(
+                title: copy.pickToningBathTemperature,
+                temperatures: Array(stride(from: 15.0, through: 35.0, by: 1.0)),
+                selectedTemperature: selectedTonerTemperature
+            ) { temperature in
+                selectedTonerTemperature = temperature
+            }
+        case .toningDuration:
+            durationPickerSheet(
+                title: copy.pickToningTime,
+                totalSeconds: $toningSeconds
+            )
         case .processDeveloperDuration:
-            processDurationPickerSheet(title: "Čas vývojky", phase: .developer)
+            processDurationPickerSheet(title: copy.pickProcessDeveloperTime, phase: .developer)
         case .processTransferToStopBathDuration:
-            processDurationPickerSheet(title: "Čas přendání do přerušovače", phase: .transferToStopBath)
+            processDurationPickerSheet(title: copy.pickProcessTransferToStopBathTime, phase: .transferToStopBath)
         case .processStopBathDuration:
-            processDurationPickerSheet(title: "Čas přerušovače", phase: .stopBath)
+            processDurationPickerSheet(title: copy.pickProcessStopBathTime, phase: .stopBath)
         case .processTransferToFixerDuration:
-            processDurationPickerSheet(title: "Čas přendání do ustalovače", phase: .transferToFixer)
+            processDurationPickerSheet(title: copy.pickProcessTransferToFixerTime, phase: .transferToFixer)
         case .processFixerDuration:
-            processDurationPickerSheet(title: "Čas ustalovače", phase: .fixer)
+            processDurationPickerSheet(title: copy.pickProcessFixerTime, phase: .fixer)
         case .processTransferToWashDuration:
-            processDurationPickerSheet(title: "Čas přendání do praní", phase: .transferToWash)
+            processDurationPickerSheet(title: copy.pickProcessTransferToWashTime, phase: .transferToWash)
         case .processWashDuration:
-            processDurationPickerSheet(title: "Čas praní", phase: .wash)
+            processDurationPickerSheet(title: copy.pickProcessWashTime, phase: .wash)
+        case .processToningDuration:
+            processDurationPickerSheet(title: copy.pickToningTime, phase: .toning)
         }
     }
 
@@ -590,6 +776,123 @@ struct SetupView: View {
         }
     }
 
+    private func sizeSelectionSheet(
+        title: String,
+        paper: Paper,
+        selectedSize: PaperSize,
+        onSelect: @escaping (PaperSize) -> Void,
+        onCustom: @escaping () -> Void
+    ) -> some View {
+        selectionSheet(title: title) {
+            ForEach(paper.availableSizes) { size in
+                selectionButton(
+                    title: size.displayName,
+                    subtitle: nil,
+                    isSelected: size.id == selectedSize.id
+                ) {
+                    onSelect(size)
+                    activePicker = nil
+                }
+            }
+
+            selectionButton(
+                title: copy.customSize,
+                subtitle: isCustomPaperSize(selectedSize, relativeTo: paper)
+                    ? selectedSize.displayName
+                    : nil,
+                isSelected: isCustomPaperSize(selectedSize, relativeTo: paper)
+            ) {
+                onCustom()
+            }
+        }
+    }
+
+    private func customSizePickerSheet(onConfirm: @escaping (PaperSize) -> Void) -> some View {
+        let widthBinding = Binding<Double>(
+            get: { customWidthCentimeters },
+            set: { customWidthCentimeters = $0 }
+        )
+        let heightBinding = Binding<Double>(
+            get: { customHeightCentimeters },
+            set: { customHeightCentimeters = $0 }
+        )
+
+        return ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 24) {
+                Text(copy.customSizeTitle)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(DarkroomPalette.red)
+
+                HStack(spacing: 18) {
+                    Picker(copy.widthLabel, selection: widthBinding) {
+                        ForEach(customSizeOptions, id: \.self) { value in
+                            Text(centimetersText(value))
+                                .foregroundStyle(DarkroomPalette.red)
+                                .tag(value)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+
+                    Picker(copy.heightLabel, selection: heightBinding) {
+                        ForEach(customSizeOptions, id: \.self) { value in
+                            Text(centimetersText(value))
+                                .foregroundStyle(DarkroomPalette.red)
+                                .tag(value)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                }
+                .foregroundStyle(DarkroomPalette.red)
+                .frame(height: 190)
+
+                Button {
+                    onConfirm(
+                        PaperSize(
+                            widthCentimeters: customWidthCentimeters,
+                            heightCentimeters: customHeightCentimeters
+                        )
+                    )
+                    activePicker = nil
+                } label: {
+                    Text(copy.confirmYes)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(DarkroomPalette.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .stroke(DarkroomPalette.red, lineWidth: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(22)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var customSizeOptions: [Double] {
+        Array(stride(from: 1.0, through: 100.0, by: 1.0))
+    }
+
+    private func snappedCustomSize(_ value: Double) -> Double {
+        let snapped = value.rounded()
+        return min(max(1.0, snapped), 100.0)
+    }
+
+    private func isCustomPaperSize(_ size: PaperSize, relativeTo paper: Paper) -> Bool {
+        !paper.availableSizes.contains(where: { $0.id == size.id })
+    }
+
+    private func centimetersText(_ value: Double) -> String {
+        let formatted = value.formatted(.number.precision(.fractionLength(0...1)))
+        return "\(formatted) \(copy.centimetersUnit)"
+    }
+
     private func temperatureSheet(
         title: String,
         temperatures: [Double],
@@ -610,7 +913,7 @@ struct SetupView: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
 
-                Picker("Teplota", selection: selectedTemperatureBinding) {
+                Picker(copy.temperatureLabel, selection: selectedTemperatureBinding) {
                     ForEach(temperatures, id: \.self) { temperature in
                         Text(temperatureText(temperature))
                             .foregroundStyle(DarkroomPalette.red)
@@ -651,17 +954,17 @@ struct SetupView: View {
                     .foregroundStyle(DarkroomPalette.red)
 
                 HStack(spacing: 18) {
-                    Picker("Minuty", selection: minutes) {
+                    Picker(copy.minutesLabel, selection: minutes) {
                         ForEach(0...999, id: \.self) { minute in
-                            Text("\(minute) min")
+                            Text("\(minute) \(copy.minutesUnit)")
                                 .foregroundStyle(DarkroomPalette.red)
                         }
                     }
                     .pickerStyle(.wheel)
 
-                    Picker("Sekundy", selection: seconds) {
+                    Picker(copy.secondsLabel, selection: seconds) {
                         ForEach(0...59, id: \.self) { second in
-                            Text("\(second) s")
+                            Text("\(second) \(copy.secondsSuffix)")
                                 .foregroundStyle(DarkroomPalette.red)
                         }
                     }
@@ -678,7 +981,22 @@ struct SetupView: View {
     }
 
     private func volumePickerSheet(title: String, milliliters: Binding<Int>) -> some View {
-        ZStack {
+        let liters = Binding<Int>(
+            get: { milliliters.wrappedValue / 1_000 },
+            set: { newLiters in
+                let mlPart = (milliliters.wrappedValue % 1_000 / 10) * 10
+                milliliters.wrappedValue = max(10, newLiters * 1_000 + mlPart)
+            }
+        )
+        let milliliterPart = Binding<Int>(
+            get: { (milliliters.wrappedValue % 1_000 / 10) * 10 },
+            set: { newMilliliters in
+                let literPart = milliliters.wrappedValue / 1_000
+                milliliters.wrappedValue = max(10, literPart * 1_000 + newMilliliters)
+            }
+        )
+
+        return ZStack {
             DarkroomPalette.black
                 .ignoresSafeArea()
 
@@ -687,14 +1005,25 @@ struct SetupView: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DarkroomPalette.red)
 
-                Picker("Objem", selection: milliliters) {
-                    ForEach(Array(stride(from: 10, through: 10_000, by: 10)), id: \.self) { value in
-                        Text(millilitersText(value))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .tag(value)
+                HStack(spacing: 18) {
+                    Picker(copy.litersLabel, selection: liters) {
+                        ForEach(0...20, id: \.self) { value in
+                            Text("\(value) \(copy.litersUnit)")
+                                .foregroundStyle(DarkroomPalette.red)
+                                .tag(value)
+                        }
                     }
+                    .pickerStyle(.wheel)
+
+                    Picker(copy.millilitersLabel, selection: milliliterPart) {
+                        ForEach(Array(stride(from: 0, through: 990, by: 10)), id: \.self) { value in
+                            Text("\(value) \(copy.millilitersUnit)")
+                                .foregroundStyle(DarkroomPalette.red)
+                                .tag(value)
+                        }
+                    }
+                    .pickerStyle(.wheel)
                 }
-                .pickerStyle(.wheel)
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(height: 190)
 
@@ -723,7 +1052,7 @@ struct SetupView: View {
         Button {
             activePicker = nil
         } label: {
-            Text("BUDIŽ")
+            Text(copy.confirmYes)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
@@ -766,13 +1095,13 @@ struct SetupView: View {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 14, weight: .bold))
-                Text("Čas dle oficiálního datasheetu")
+                Text(copy.legendDocumented)
                     .font(.system(size: 13, weight: .semibold))
             }
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 14, weight: .bold))
-                Text("Jen přepočet – bez záruky")
+                Text(copy.legendInterpolated)
                     .font(.system(size: 13, weight: .semibold))
             }
         }
@@ -809,7 +1138,7 @@ struct SetupView: View {
                     Image(systemName: isDocumented ? "checkmark.seal.fill" : "exclamationmark.triangle")
                         .font(.system(size: 16, weight: .bold))
                         .opacity(isDocumented ? 1 : 0.8)
-                        .accessibilityLabel(isDocumented ? "Dle dokumentace" : "Přepočet bez záruky")
+                        .accessibilityLabel(isDocumented ? copy.a11yDocumented : copy.a11yInterpolated)
                 }
             }
             .foregroundStyle(DarkroomPalette.red)
@@ -864,7 +1193,7 @@ struct SetupView: View {
                 activePicker = picker
             } label: {
                 HStack(spacing: 12) {
-                    Text("Přendání")
+                    Text(copy.rowTransfer)
                         .font(.system(size: 18, weight: .semibold))
 
                     Spacer(minLength: 16)
@@ -883,7 +1212,7 @@ struct SetupView: View {
                     Image(systemName: isSynced ? "checkmark.square.fill" : "square")
                         .font(.system(size: 14, weight: .bold))
 
-                    Text("SYNC")
+                    Text(copy.sync)
                         .font(.system(size: 12, weight: .bold))
                 }
                 .padding(.horizontal, 8)
@@ -904,48 +1233,74 @@ struct SetupView: View {
         rowContent(title: title, value: value, showsChevron: false)
     }
 
+    private var toningToggleRow: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isToningEnabled.toggle()
+            }
+        } label: {
+            HStack {
+                Text(copy.sectionToning)
+                    .font(.system(size: 18, weight: isToningEnabled ? .bold : .semibold))
+                Spacer()
+                darkroomSwitch(isOn: isToningEnabled)
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func temperatureRow(
+        dilution: ChemicalDilution,
+        temperature: Double,
+        picker: SetupPicker
+    ) -> some View {
+        if availableTemperatures(for: dilution).count > 1 {
+            pickerRow(title: copy.rowTemperature, value: temperatureText(temperature), picker: picker)
+        } else {
+            readOnlyRow(title: copy.rowTemperature, value: temperatureText(temperature))
+        }
+    }
+
     private func timeRow(dilution: ChemicalDilution, temperatureCelsius: Double) -> some View {
-        let documented = dilution.isDocumented(for: selectedPaper)
+        let documented = dilution.isDocumented(for: selectedPaper, temperatureCelsius: temperatureCelsius)
         let value = dilution
             .timeRange(for: selectedPaper, temperatureCelsius: temperatureCelsius)
             .displayText
 
         return HStack(spacing: 12) {
-            Text("Čas")
+            Text(copy.rowTime)
                 .font(.system(size: 18, weight: .semibold))
 
             Spacer(minLength: 16)
 
-            VStack(alignment: .trailing, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(value)
-                        .font(.system(size: 18, weight: .bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+            HStack(spacing: 6) {
+                Text(value)
+                    .font(.system(size: 18, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
-                    Image(systemName: documented ? "checkmark.seal.fill" : "exclamationmark.triangle")
-                        .font(.system(size: 14, weight: .bold))
-                        .opacity(documented ? 1 : 0.85)
-                }
-
-                Text(documented ? "Dle dokumentace" : "Přepočet – bez záruky")
-                    .font(.system(size: 12, weight: .semibold))
-                    .opacity(0.65)
+                Image(systemName: documented ? "checkmark.seal.fill" : "exclamationmark.triangle")
+                    .font(.system(size: 14, weight: .bold))
+                    .opacity(documented ? 1 : 0.85)
             }
         }
         .foregroundStyle(DarkroomPalette.red)
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Čas \(value), \(documented ? "dle dokumentace" : "přepočet bez záruky")")
+        .accessibilityLabel("\(copy.rowTime) \(value), \(documented ? copy.a11yDocumented : copy.a11yInterpolated)")
     }
 
     @ViewBuilder
     private func mixRows(dilution: ChemicalDilution, totalMilliliters: Int) -> some View {
         let mix = dilution.mixComponents(totalMilliliters: totalMilliliters)
-        readOnlyRow(title: "Chemikálie", value: millilitersText(mix.chemicalMilliliters))
+        readOnlyRow(title: copy.rowChemicalAmount, value: millilitersText(mix.chemicalMilliliters))
         divider
-        readOnlyRow(title: "Voda", value: millilitersText(mix.waterMilliliters))
+        readOnlyRow(title: copy.rowWater, value: millilitersText(mix.waterMilliliters))
     }
 
     private func capacityRow(chemical: Chemical, dilution: ChemicalDilution, totalMilliliters: Int) -> some View {
@@ -955,7 +1310,7 @@ struct SetupView: View {
         )
 
         return readOnlyRow(
-            title: "Vydatnost",
+            title: copy.rowCapacity,
             value: percent.map { "\($0) %" } ?? "--"
         )
     }
@@ -968,7 +1323,7 @@ struct SetupView: View {
         onReset: @escaping () -> Void
     ) -> some View {
         HStack(spacing: 12) {
-            Text("Použito")
+            Text(copy.rowUsed)
                 .font(.system(size: 18, weight: .semibold))
 
             Spacer(minLength: 16)
@@ -977,7 +1332,7 @@ struct SetupView: View {
                 .font(.system(size: 18, weight: .bold))
 
             Button(action: onReset) {
-                Text("RESET")
+                Text(copy.reset)
                     .font(.system(size: 13, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
@@ -993,7 +1348,7 @@ struct SetupView: View {
                     Image(systemName: isSynced ? "checkmark.square.fill" : "square")
                         .font(.system(size: 14, weight: .bold))
 
-                    Text("SYNC")
+                    Text(copy.sync)
                         .font(.system(size: 12, weight: .bold))
                 }
                 .padding(.horizontal, 8)
@@ -1216,6 +1571,8 @@ struct SetupView: View {
     private func apply(session: DevelopmentSession) {
         selectedPaper = session.paper
         selectedPaperSize = session.paperSize
+        selectedTestStripPaper = session.testStripPaper
+        selectedTestStripPaperSize = session.testStripPaperSize
         selectedDeveloper = session.developer
         selectedDeveloperDilution = session.developerDilution
         selectedDeveloperTemperature = session.developerTemperatureCelsius
@@ -1231,6 +1588,15 @@ struct SetupView: View {
         transferAfterDeveloperSeconds = Int(session.transferAfterDeveloperDuration.rounded())
         transferAfterStopBathSeconds = Int(session.transferAfterStopBathDuration.rounded())
         transferAfterFixerSeconds = Int(session.transferAfterFixerDuration.rounded())
+        washTemperature = session.washTemperatureCelsius
+        isToningEnabled = session.isToningEnabled
+        if let toner = session.toner {
+            selectedToner = toner
+            selectedTonerDilution = session.tonerDilution ?? toner.dilutions[0]
+        }
+        selectedTonerTemperature = session.toningTemperatureCelsius
+        tonerVolumeMilliliters = session.toningVolumeMilliliters
+        toningSeconds = Int(session.toningDuration.rounded())
         phaseDurationOverrides = session.phaseDurationOverrides.mapValues { Int($0.rounded()) }
     }
 
@@ -1238,6 +1604,8 @@ struct SetupView: View {
         let baseSession = DevelopmentSession(
             paper: selectedPaper,
             paperSize: selectedPaperSize,
+            testStripPaper: selectedTestStripPaper,
+            testStripPaperSize: selectedTestStripPaperSize,
             developer: selectedDeveloper,
             developerDilution: selectedDeveloperDilution,
             stopBath: selectedStopBath,
@@ -1252,7 +1620,14 @@ struct SetupView: View {
             fixerVolumeMilliliters: fixerVolumeMilliliters,
             transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
             transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
-            transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds)
+            transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds),
+            washTemperatureCelsius: washTemperature,
+            isToningEnabled: isToningEnabled,
+            toner: isToningEnabled ? selectedToner : nil,
+            tonerDilution: isToningEnabled ? selectedTonerDilution : nil,
+            toningTemperatureCelsius: selectedTonerTemperature,
+            toningVolumeMilliliters: tonerVolumeMilliliters,
+            toningDuration: TimeInterval(toningSeconds)
         )
 
         let duration = baseSession.resolvedPhases().first { $0.phase == phase }?.duration ?? 0
@@ -1275,6 +1650,8 @@ struct SetupView: View {
             return .processTransferToWashDuration
         case .wash:
             return .processWashDuration
+        case .toning:
+            return .processToningDuration
         }
     }
 
@@ -1283,25 +1660,27 @@ struct SetupView: View {
     }
 
     private func millilitersText(_ milliliters: Int) -> String {
-        "\(milliliters) ml"
+        "\(milliliters) \(copy.millilitersUnit)"
     }
 
     private func displayTitle(for phase: ProcessPhase) -> String {
         switch phase {
         case .developer:
-            return "Vývojka"
+            return copy.sectionDeveloper
         case .stopBath:
-            return "Přerušovač"
+            return copy.sectionStopBath
         case .fixer:
-            return "Ustalovač"
+            return copy.sectionFixer
         case .transferToStopBath:
-            return "Přendání do přerušovače"
+            return copy.processTransferToStopBath
         case .transferToFixer:
-            return "Přendání do ustalovače"
+            return copy.processTransferToFixer
         case .transferToWash:
-            return "Přendání do praní"
+            return copy.processTransferToWash
         case .wash:
-            return "Praní"
+            return copy.sectionWash
+        case .toning:
+            return copy.sectionToning
         }
     }
 
@@ -1317,6 +1696,10 @@ private enum SetupPicker: String, Identifiable {
     case presets
     case paper
     case paperSize
+    case customPaperSize
+    case testStripPaper
+    case testStripPaperSize
+    case customTestStripPaperSize
     case developer
     case developerDilution
     case developerVolume
@@ -1332,6 +1715,12 @@ private enum SetupPicker: String, Identifiable {
     case transferAfterDeveloper
     case transferAfterStopBath
     case transferAfterFixer
+    case washTemperature
+    case toner
+    case tonerDilution
+    case tonerVolume
+    case tonerTemperature
+    case toningDuration
     case processDeveloperDuration
     case processTransferToStopBathDuration
     case processStopBathDuration
@@ -1339,6 +1728,7 @@ private enum SetupPicker: String, Identifiable {
     case processFixerDuration
     case processTransferToWashDuration
     case processWashDuration
+    case processToningDuration
 
     var id: String { rawValue }
 }
@@ -1355,17 +1745,41 @@ private enum UsageSyncTarget {
     case fixer
 }
 
+/// OFF: prázdný kruh vlevo (jen červený obrys). ON: plný červený kruh vpravo.
+/// Dráha je vždy černá.
+private func darkroomSwitch(isOn: Bool) -> some View {
+    Capsule()
+        .fill(DarkroomPalette.black)
+        .overlay(
+            Capsule()
+                .stroke(DarkroomPalette.red, lineWidth: 2)
+        )
+        .frame(width: 52, height: 32)
+        .overlay(
+            Circle()
+                .fill(isOn ? DarkroomPalette.red : Color.clear)
+                .overlay(
+                    Circle()
+                        .stroke(DarkroomPalette.red, lineWidth: 2)
+                )
+                .frame(width: 22, height: 22)
+                .padding(.horizontal, 5)
+                .frame(maxWidth: .infinity, alignment: isOn ? .trailing : .leading)
+        )
+        .animation(.easeInOut(duration: 0.15), value: isOn)
+}
+
 struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
+    @State private var isLanguagePickerPresented = false
+    @State private var isRussianBlockedAlertPresented = false
 
     private let cardColor = DarkroomPalette.black
     private var copy: AppCopy { settingsStore.copy }
 
     private var appVersion: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(version) (\(build))"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
     var body: some View {
@@ -1437,19 +1851,17 @@ struct SettingsSheetView: View {
                                 title: copy.languageTitle,
                                 value: settingsStore.language.displayName
                             ) {
-                                let languages = AppLanguage.allCases
-                                if let index = languages.firstIndex(of: settingsStore.language) {
-                                    settingsStore.language = languages[(index + 1) % languages.count]
-                                }
+                                isLanguagePickerPresented = true
                             }
                         }
 
                         settingsCard {
                             readOnlySettingsRow(title: copy.version, value: appVersion)
                             settingsDivider
-                            Text(copy.aboutHint)
+                            Text(copy.copyright)
                                 .font(.system(size: 14, weight: .regular))
                                 .foregroundStyle(DarkroomPalette.red.opacity(0.85))
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 14)
                         }
@@ -1463,6 +1875,120 @@ struct SettingsSheetView: View {
         }
         .preferredColorScheme(.dark)
         .statusBar(hidden: true)
+        .sheet(isPresented: $isLanguagePickerPresented) {
+            languagePickerSheet
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(DarkroomPalette.black)
+        }
+    }
+
+    private var languagePickerSheet: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(copy.languageTitle)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(DarkroomPalette.red)
+                        .padding(.bottom, 6)
+
+                    ForEach(AppLanguage.allCases) { language in
+                        Button {
+                            if language.isTemporarilyBlocked {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isRussianBlockedAlertPresented = true
+                                }
+                            } else {
+                                settingsStore.language = language
+                                isLanguagePickerPresented = false
+                            }
+                        } label: {
+                            HStack {
+                                Text(language.displayName)
+                                    .font(.system(size: 20, weight: language == settingsStore.language ? .bold : .regular))
+                                    .opacity(language.isTemporarilyBlocked ? 0.55 : 1)
+                                Spacer()
+                                if language == settingsStore.language {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 18, weight: .bold))
+                                }
+                            }
+                            .foregroundStyle(DarkroomPalette.red)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .fill(cardColor)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(
+                                        DarkroomPalette.red.opacity(language == settingsStore.language ? 1 : 0.35),
+                                        lineWidth: language == settingsStore.language ? 2 : 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(22)
+            }
+            .scrollIndicators(.hidden)
+
+            if isRussianBlockedAlertPresented {
+                russianBlockedAlertOverlay
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var russianBlockedAlertOverlay: some View {
+        ZStack {
+            DarkroomPalette.black.opacity(0.9)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isRussianBlockedAlertPresented = false
+                    }
+                }
+
+            VStack(spacing: 20) {
+                Text(copy.russianLanguageBlockedMessage)
+                    .font(.system(size: 18, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .opacity(0.95)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isRussianBlockedAlertPresented = false
+                    }
+                } label: {
+                    Text(copy.confirmYes)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(DarkroomPalette.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(DarkroomPalette.red))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(DarkroomPalette.red, lineWidth: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(26)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 24).fill(DarkroomPalette.black))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red, lineWidth: 2)
+            )
+            .padding(32)
+        }
     }
 
     private var settingsTopBar: some View {
@@ -1530,21 +2056,7 @@ struct SettingsSheetView: View {
     }
 
     private func redSwitch(isOn: Bool) -> some View {
-        Capsule()
-            .fill(isOn ? DarkroomPalette.red.opacity(0.35) : DarkroomPalette.black)
-            .overlay(
-                Capsule()
-                    .stroke(DarkroomPalette.red, lineWidth: 2)
-            )
-            .frame(width: 52, height: 32)
-            .overlay(
-                Circle()
-                    .fill(DarkroomPalette.red)
-                    .frame(width: 22, height: 22)
-                    .padding(.horizontal, 5)
-                    .frame(maxWidth: .infinity, alignment: isOn ? .trailing : .leading)
-            )
-            .animation(.easeInOut(duration: 0.15), value: isOn)
+        darkroomSwitch(isOn: isOn)
     }
 
     private func redSlider(value: Binding<Double>, in range: ClosedRange<Double>, step: Double) -> some View {
@@ -1661,12 +2173,26 @@ struct SettingsSheetView: View {
 
 private struct PresetsSheetView: View {
     @ObservedObject private var presetStore = PresetStore.shared
-    @State private var presetName = ""
+    @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
+    @State private var pendingAction: PendingPresetAction?
 
     let session: DevelopmentSession
     let onLoad: (DevelopmentSession) -> Void
 
     private let cardColor = DarkroomPalette.black
+    private var copy: AppCopy { settingsStore.copy }
+
+    private enum PendingPresetAction {
+        case overwrite(DevelopmentPreset)
+        case delete(DevelopmentPreset)
+
+        var preset: DevelopmentPreset {
+            switch self {
+            case .overwrite(let preset), .delete(let preset):
+                return preset
+            }
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -1674,88 +2200,48 @@ private struct PresetsSheetView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Presety")
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(copy.presetsTitle)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(DarkroomPalette.red)
+                        .padding(.bottom, 4)
 
-                    savePresetSection
+                    Text(copy.savePresetHeader)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(DarkroomPalette.red)
 
-                    if presetStore.presets.isEmpty {
-                        Text("Zatím nemáš uložený žádný preset.")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .padding(.top, 10)
-                    } else {
-                        Text("Načíst preset")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .padding(.top, 8)
-
-                        ForEach(presetStore.presets) { preset in
-                            presetRow(preset)
-                        }
+                    ForEach(DevelopmentPreset.alphabetLetters, id: \.self) { letter in
+                        presetSlot(letter: letter)
                     }
                 }
                 .padding(22)
             }
             .scrollIndicators(.hidden)
+
+            if let pendingAction {
+                confirmationOverlay(for: pendingAction)
+            }
         }
         .preferredColorScheme(.dark)
     }
 
-    private var savePresetSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Uložit aktuální nastavení")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(DarkroomPalette.red)
+    private func presetSlot(letter: String) -> some View {
+        let name = DevelopmentPreset.displayName(for: letter)
+        let preset = presetStore.preset(forLetter: letter)
 
-            TextField("Název presetu", text: $presetName)
-                .textInputAutocapitalization(.words)
-                .textContentType(.name)
-                .autocorrectionDisabled()
-                .submitLabel(.done)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(DarkroomPalette.red)
-                .tint(DarkroomPalette.red)
-                .padding(16)
-                .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
-                )
-                .onSubmit {
-                    savePreset()
+        return HStack(spacing: 10) {
+            Button {
+                if let preset {
+                    onLoad(preset.session)
+                } else {
+                    presetStore.save(letter: letter, session: session)
                 }
-
-            Button {
-                savePreset()
-            } label: {
-                Text("ULOŽIT PRESET")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(DarkroomPalette.red)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 15)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(cardColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(DarkroomPalette.red, lineWidth: 2)
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func presetRow(_ preset: DevelopmentPreset) -> some View {
-        HStack(spacing: 12) {
-            Button {
-                onLoad(preset.session)
             } label: {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(preset.name)
+                    Text(name)
                         .font(.system(size: 18, weight: .bold))
 
-                    Text(preset.session.paper.displayName)
+                    Text(preset?.session.paper.displayName ?? copy.emptyPresetSlot)
                         .font(.system(size: 13, weight: .semibold))
                         .lineLimit(1)
                 }
@@ -1764,32 +2250,133 @@ private struct PresetsSheetView: View {
             }
             .buttonStyle(.plain)
 
-            Button {
-                presetStore.delete(preset)
-            } label: {
-                Text("SMAZAT")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(DarkroomPalette.red)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .overlay(
-                        Capsule()
-                            .stroke(DarkroomPalette.red, lineWidth: 1)
-                    )
+            if let preset {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        pendingAction = .overwrite(preset)
+                    }
+                } label: {
+                    presetActionLabel(copy.overwritePreset)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        pendingAction = .delete(preset)
+                    }
+                } label: {
+                    presetActionLabel(copy.deletePreset)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    presetStore.save(letter: letter, session: session)
+                } label: {
+                    presetActionLabel(copy.savePresetButton)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 18).fill(cardColor))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(DarkroomPalette.red.opacity(0.25), lineWidth: 1)
+                .stroke(DarkroomPalette.red.opacity(preset == nil ? 0.25 : 0.45), lineWidth: 1)
         )
     }
 
-    private func savePreset() {
-        presetStore.save(name: presetName, session: session)
-        presetName = ""
+    private func presetActionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .overlay(
+                Capsule()
+                    .stroke(DarkroomPalette.red, lineWidth: 1)
+            )
+    }
+
+    private func confirmationOverlay(for action: PendingPresetAction) -> some View {
+        let message: String = {
+            switch action {
+            case .overwrite(let preset):
+                return copy.confirmOverwritePresetMessage(preset.name)
+            case .delete(let preset):
+                return copy.confirmDeletePresetMessage(preset.name)
+            }
+        }()
+
+        return ZStack {
+            DarkroomPalette.black.opacity(0.9)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.15)) { pendingAction = nil }
+                }
+
+            VStack(spacing: 20) {
+                Text(copy.confirmTitle)
+                    .font(.system(size: 28, weight: .bold))
+
+                Text(message)
+                    .font(.system(size: 15, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .opacity(0.8)
+
+                VStack(spacing: 12) {
+                    Button {
+                        perform(action)
+                        withAnimation(.easeInOut(duration: 0.15)) { pendingAction = nil }
+                    } label: {
+                        Text(copy.confirmYes)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(DarkroomPalette.black))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(DarkroomPalette.red, lineWidth: 2)
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) { pendingAction = nil }
+                    } label: {
+                        Text(copy.confirmNo)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(DarkroomPalette.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(DarkroomPalette.red))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(DarkroomPalette.red, lineWidth: 2)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(26)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 24).fill(DarkroomPalette.black))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red, lineWidth: 2)
+            )
+            .padding(32)
+        }
+    }
+
+    private func perform(_ action: PendingPresetAction) {
+        switch action {
+        case .overwrite(let preset):
+            presetStore.overwrite(preset, with: session)
+        case .delete(let preset):
+            presetStore.delete(preset)
+        }
     }
 }
 

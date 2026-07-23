@@ -11,6 +11,26 @@ struct DevelopmentPreset: Identifiable, Codable, Hashable {
         self.name = name
         self.session = session
     }
+
+    var letter: String? {
+        Self.letter(from: name)
+    }
+
+    static func displayName(for letter: String) -> String {
+        "Preset \(letter)"
+    }
+
+    static func letter(from name: String) -> String? {
+        let prefix = "Preset "
+        guard name.hasPrefix(prefix) else { return nil }
+        let letter = String(name.dropFirst(prefix.count))
+        guard letter.count == 1, ("A"..."Z").contains(letter) else { return nil }
+        return letter
+    }
+
+    static let alphabetLetters: [String] = {
+        (0..<26).map { String(UnicodeScalar(UInt8(65 + $0))) }
+    }()
 }
 
 @MainActor
@@ -26,25 +46,38 @@ final class PresetStore: ObservableObject {
         self.defaults = defaults
 
         guard let data = defaults.data(forKey: userDefaultsKey),
-              let presets = try? JSONDecoder().decode([DevelopmentPreset].self, from: data) else {
+              let decoded = try? JSONDecoder().decode([DevelopmentPreset].self, from: data) else {
             self.presets = []
             return
         }
 
-        self.presets = presets
+        // Ponecháme jen sloty Preset A–Z (staré volné názvy zahodíme).
+        self.presets = decoded
+            .filter { $0.letter != nil }
+            .sorted { ($0.letter ?? "") < ($1.letter ?? "") }
     }
 
-    func save(name: String, session: DevelopmentSession) {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
+    func preset(forLetter letter: String) -> DevelopmentPreset? {
+        let name = DevelopmentPreset.displayName(for: letter)
+        return presets.first { $0.name == name }
+    }
 
-        if let existingIndex = presets.firstIndex(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+    func save(letter: String, session: DevelopmentSession) {
+        let name = DevelopmentPreset.displayName(for: letter)
+
+        if let existingIndex = presets.firstIndex(where: { $0.name == name }) {
             presets[existingIndex].session = session
         } else {
-            presets.append(DevelopmentPreset(name: trimmedName, session: session))
+            presets.append(DevelopmentPreset(name: name, session: session))
         }
 
-        presets.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        presets.sort { ($0.letter ?? "") < ($1.letter ?? "") }
+        persist()
+    }
+
+    func overwrite(_ preset: DevelopmentPreset, with session: DevelopmentSession) {
+        guard let index = presets.firstIndex(where: { $0.id == preset.id }) else { return }
+        presets[index].session = session
         persist()
     }
 

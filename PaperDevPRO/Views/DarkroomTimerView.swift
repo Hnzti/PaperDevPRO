@@ -19,6 +19,7 @@ public struct DarkroomTimerView: View {
     @StateObject private var viewModel: TimerViewModel
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var navigationPath: [SetupRoute] = []
+    @State private var pendingDeleteRunID: UUID?
 
     public init(session: DevelopmentSession? = nil) {
         let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
@@ -48,7 +49,7 @@ public struct DarkroomTimerView: View {
         switch route {
         case .setup:
             SetupView(
-                initialSession: viewModel.selectedRun.session,
+                initialSession: viewModel.session,
                 onResetProject: {
                     viewModel.resetProject()
                 },
@@ -72,21 +73,28 @@ public struct DarkroomTimerView: View {
                 VStack(spacing: 22) {
                     paperRunTimeline
 
-                    phaseTimeline
+                    if viewModel.hasRuns {
+                        phaseTimeline
 
-                    phaseHeader
+                        phaseHeader
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
 
-                    Text(viewModel.formattedRemainingTime)
-                        .font(.system(size: timerFontSize(for: geometry.size), weight: .bold, design: .monospaced))
-                        .minimumScaleFactor(0.35)
-                        .lineLimit(1)
-                        .accessibilityLabel(accessibilityTimerLabel)
+                        Text(viewModel.formattedRemainingTime)
+                            .font(.system(size: timerFontSize(for: geometry.size), weight: .bold, design: .monospaced))
+                            .minimumScaleFactor(0.35)
+                            .lineLimit(1)
+                            .accessibilityLabel(accessibilityTimerLabel)
 
-                    statusText
+                        statusText
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    } else {
+                        controlsHintView
+                            .padding(.top, 28)
+
+                        Spacer(minLength: 0)
+                    }
 
                     controlButtons
                 }
@@ -94,6 +102,10 @@ public struct DarkroomTimerView: View {
                 .multilineTextAlignment(.center)
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if pendingDeleteRunID != nil {
+                    deleteRunConfirmationOverlay
+                }
             }
         }
         .background(DarkroomPalette.black)
@@ -110,27 +122,35 @@ public struct DarkroomTimerView: View {
     private var paperRunTimeline: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                Button {
-                    viewModel.addPaperRun()
-                } label: {
-                    Text("+")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(DarkroomPalette.red)
-                        .frame(width: 58, height: 58)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(DarkroomPalette.red, lineWidth: 2)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                ForEach(viewModel.runs.sorted { $0.number > $1.number }) { run in
-                    Button {
-                        viewModel.selectRun(id: run.id)
-                    } label: {
-                        paperRunCard(for: run)
+                Text("+")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(DarkroomPalette.red)
+                    .frame(width: 58, height: 58)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(DarkroomPalette.red, lineWidth: 2)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 14))
+                    .onTapGesture {
+                        viewModel.addPaperRun()
                     }
-                    .buttonStyle(.plain)
+                    .onLongPressGesture(minimumDuration: 0.45) {
+                        viewModel.addTestStripRun()
+                    }
+                    .accessibilityLabel(copy.paper)
+                    .accessibilityHint(copy.longPressAddStripHint)
+
+                ForEach(Array(viewModel.runs.reversed())) { run in
+                    paperRunCard(for: run)
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
+                        .onTapGesture {
+                            viewModel.selectRun(id: run.id)
+                        }
+                        .onLongPressGesture(minimumDuration: 0.45) {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                pendingDeleteRunID = run.id
+                            }
+                        }
                 }
             }
             .padding(.horizontal, 2)
@@ -138,11 +158,38 @@ public struct DarkroomTimerView: View {
         .frame(height: 70)
     }
 
+    private var controlsHintView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            hintLine(copy.controlsHintAddPaper)
+            hintLine(copy.controlsHintAddStrip)
+            hintLine(copy.controlsHintDelete)
+
+            Text(copy.safelightWarning)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DarkroomPalette.red.opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(copy.controlsHint)\n\(copy.safelightWarning)")
+    }
+
+    private func hintLine(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundStyle(DarkroomPalette.red)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
     private func paperRunCard(for run: TimerViewModel.PaperRun) -> some View {
         let isSelected = run.id == viewModel.selectedRunID
+        let title = run.isTestStrip
+            ? "\(copy.testStrip) \(run.number)"
+            : "\(copy.paper) \(run.number)"
 
         return VStack(alignment: .leading, spacing: 4) {
-            Text("\(copy.paper) \(run.number)")
+            Text(title)
                 .font(.system(size: 17, weight: .bold))
 
             Text(runStatusText(for: run))
@@ -156,6 +203,74 @@ public struct DarkroomTimerView: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(DarkroomPalette.red, lineWidth: isSelected ? 3 : 1)
         )
+    }
+
+    private var deleteRunConfirmationOverlay: some View {
+        ZStack {
+            DarkroomPalette.black.opacity(0.9)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.15)) { pendingDeleteRunID = nil }
+                }
+
+            VStack(spacing: 20) {
+                Text(copy.confirmDeleteRunTitle)
+                    .font(.system(size: 28, weight: .bold))
+
+                Text(copy.confirmDeleteRunMessage)
+                    .font(.system(size: 15, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .opacity(0.8)
+
+                VStack(spacing: 12) {
+                    Button {
+                        if let pendingDeleteRunID {
+                            viewModel.deleteRun(id: pendingDeleteRunID)
+                        }
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            self.pendingDeleteRunID = nil
+                        }
+                    } label: {
+                        Text(copy.confirmYes)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(DarkroomPalette.red)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(DarkroomPalette.black))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(DarkroomPalette.red, lineWidth: 2)
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) { pendingDeleteRunID = nil }
+                    } label: {
+                        Text(copy.confirmNo)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(DarkroomPalette.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(DarkroomPalette.red))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(DarkroomPalette.red, lineWidth: 2)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(26)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 24).fill(DarkroomPalette.black))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red, lineWidth: 2)
+            )
+            .padding(32)
+        }
     }
 
     private var phaseTimeline: some View {
@@ -203,8 +318,10 @@ public struct DarkroomTimerView: View {
 
     private var phaseHeader: some View {
         VStack(spacing: 8) {
-            Text(copy.phaseTitle(viewModel.currentPhase.phase).uppercased())
-                .font(.system(size: 34, weight: .bold))
+            if let phase = viewModel.currentPhase {
+                Text(copy.phaseTitle(phase.phase).uppercased())
+                    .font(.system(size: 34, weight: .bold))
+            }
         }
         .accessibilityElement(children: .combine)
     }
@@ -243,10 +360,11 @@ public struct DarkroomTimerView: View {
             Button {
                 viewModel.startOrPause()
             } label: {
-                controlButtonLabel(startPauseTitle)
+                controlButtonLabel(startPauseTitle, isDisabled: !viewModel.hasRuns)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(startPauseTitle)
+            .disabled(!viewModel.hasRuns)
         }
         .padding(.horizontal, 6)
     }
@@ -274,6 +392,10 @@ public struct DarkroomTimerView: View {
     }
 
     private var secondaryButtonTitle: String {
+        if !viewModel.hasRuns {
+            return copy.setup
+        }
+
         switch viewModel.state {
         case .paused:
             return copy.reset
@@ -283,10 +405,15 @@ public struct DarkroomTimerView: View {
     }
 
     private var isSecondaryButtonDisabled: Bool {
-        viewModel.state == .running && secondaryButtonTitle == copy.setup
+        viewModel.hasRuns && viewModel.state == .running && secondaryButtonTitle == copy.setup
     }
 
     private func handleSecondaryButtonTap() {
+        if !viewModel.hasRuns {
+            navigationPath.append(.setup)
+            return
+        }
+
         switch viewModel.state {
         case .paused:
             viewModel.reset()
@@ -298,7 +425,10 @@ public struct DarkroomTimerView: View {
     }
 
     private var accessibilityTimerLabel: String {
-        "\(copy.phaseTitle(viewModel.currentPhase.phase)), \(viewModel.formattedRemainingTime)"
+        guard let phase = viewModel.currentPhase else {
+            return copy.controlsHint
+        }
+        return "\(copy.phaseTitle(phase.phase)), \(viewModel.formattedRemainingTime)"
     }
 
     private func timerFontSize(for size: CGSize) -> CGFloat {

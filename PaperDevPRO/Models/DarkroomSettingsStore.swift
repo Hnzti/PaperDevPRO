@@ -6,20 +6,6 @@ import SwiftUI
 import UIKit
 #endif
 
-enum AppLanguage: String, CaseIterable, Identifiable {
-    case czech = "cs"
-    case english = "en"
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .czech: return "Čeština"
-        case .english: return "English"
-        }
-    }
-}
-
 enum TemperatureUnit: String, CaseIterable, Identifiable {
     case celsius
     case fahrenheit
@@ -27,11 +13,9 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     func displayName(language: AppLanguage) -> String {
-        switch (self, language) {
-        case (.celsius, .czech): return "°C"
-        case (.celsius, .english): return "°C"
-        case (.fahrenheit, .czech): return "°F"
-        case (.fahrenheit, .english): return "°F"
+        switch self {
+        case .celsius: return "°C"
+        case .fahrenheit: return "°F"
         }
     }
 }
@@ -80,7 +64,13 @@ final class DarkroomSettingsStore: ObservableObject {
     }
 
     @Published var language: AppLanguage {
-        didSet { defaults.set(language.rawValue, forKey: Keys.language) }
+        didSet {
+            if language.isTemporarilyBlocked {
+                language = oldValue.isTemporarilyBlocked ? .czech : oldValue
+                return
+            }
+            defaults.set(language.rawValue, forKey: Keys.language)
+        }
     }
 
     var copy: AppCopy { AppCopy(language: language) }
@@ -119,7 +109,8 @@ final class DarkroomSettingsStore: ObservableObject {
             self.temperatureUnit = .celsius
         }
 
-        if let language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
+        if let language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)),
+           !language.isTemporarilyBlocked {
             self.language = language
         } else {
             self.language = .czech
@@ -194,65 +185,3 @@ final class DarkroomSettingsStore: ObservableObject {
         }
     }
 }
-
-struct AppCopy {
-    let language: AppLanguage
-
-    var settingsTitle: String { text(cs: "Nastavení", en: "Settings") }
-    var redDisplay: String { text(cs: "Červený displej", en: "Red display") }
-    var guidedAccess: String { text(cs: "Guidovaný přístup", en: "Guided Access") }
-    var openSettings: String { text(cs: "Otevřít", en: "Open") }
-    var sound: String { text(cs: "Zvuky", en: "Sounds") }
-    var haptics: String { text(cs: "Haptika", en: "Haptics") }
-    var keepScreenOn: String { text(cs: "Neusínat", en: "Keep screen on") }
-    var darkroomBrightness: String { text(cs: "Nízký jas", en: "Low brightness") }
-    var brightnessLevel: String { text(cs: "Úroveň jasu", en: "Brightness level") }
-    var defaultTransfer: String { text(cs: "Výchozí přendání", en: "Default transfer") }
-    var temperatureUnit: String { text(cs: "Jednotky teploty", en: "Temperature unit") }
-    var languageTitle: String { text(cs: "Jazyk", en: "Language") }
-    var about: String { text(cs: "O aplikaci", en: "About") }
-    var version: String { text(cs: "Verze", en: "Version") }
-    var aboutHint: String {
-        text(
-            cs: "Pro darkroom zapni Barevné filtry a případně Guidovaný přístup ve zpřístupnění iOS.",
-            en: "For darkroom use, enable Color Filters and optionally Guided Access in iOS Accessibility."
-        )
-    }
-    var on: String { text(cs: "Zapnuto", en: "On") }
-    var off: String { text(cs: "Vypnuto", en: "Off") }
-    var secondsSuffix: String { text(cs: "s", en: "s") }
-
-    var start: String { text(cs: "START", en: "START") }
-    var pause: String { text(cs: "PAUSE", en: "PAUSE") }
-    var resume: String { text(cs: "RESUME", en: "RESUME") }
-    var setup: String { text(cs: "SETUP", en: "SETUP") }
-    var reset: String { text(cs: "RESET", en: "RESET") }
-    var ready: String { text(cs: "READY", en: "READY") }
-    var running: String { text(cs: "RUNNING", en: "RUNNING") }
-    var paused: String { text(cs: "PAUSED", en: "PAUSED") }
-    var complete: String { text(cs: "COMPLETE", en: "COMPLETE") }
-    var done: String { text(cs: "DONE", en: "DONE") }
-    var paper: String { text(cs: "Papír", en: "Paper") }
-
-    func phaseTitle(_ phase: ProcessPhase) -> String {
-        switch (phase, language) {
-        case (.developer, .czech): return "Vývojka"
-        case (.developer, .english): return "Developer"
-        case (.transferToStopBath, .czech), (.transferToFixer, .czech), (.transferToWash, .czech):
-            return "Přendání"
-        case (.transferToStopBath, .english), (.transferToFixer, .english), (.transferToWash, .english):
-            return "Transfer"
-        case (.stopBath, .czech): return "Přerušovač"
-        case (.stopBath, .english): return "Stop bath"
-        case (.fixer, .czech): return "Ustalovač"
-        case (.fixer, .english): return "Fixer"
-        case (.wash, .czech): return "Praní"
-        case (.wash, .english): return "Wash"
-        }
-    }
-
-    private func text(cs: String, en: String) -> String {
-        language == .czech ? cs : en
-    }
-}
-

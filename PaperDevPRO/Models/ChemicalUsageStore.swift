@@ -46,6 +46,12 @@ final class ChemicalUsageStore: ObservableObject {
         append(entry, chemical: session.developer, dilution: session.developerDilution)
         append(entry, chemical: session.stopBath, dilution: session.stopBathDilution)
         append(entry, chemical: session.fixer, dilution: session.fixerDilution)
+
+        if session.isToningEnabled,
+           let toner = session.toner,
+           let tonerDilution = session.tonerDilution {
+            append(entry, chemical: toner, dilution: tonerDilution)
+        }
     }
 
     private func append(_ entry: ChemicalUsageEntry, chemical: Chemical, dilution: ChemicalDilution) {

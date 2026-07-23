@@ -26,7 +26,7 @@ public struct Paper: Identifiable, Codable, Hashable {
     public let developerTemperatureCurve: [TemperatureTimeFactor]
 
     public var displayName: String {
-        "\(manufacturer) \(name) (\(type.rawValue))"
+        "\(manufacturer) \(name)"
     }
 
     public init(
@@ -149,6 +149,7 @@ public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable 
     case fixer
     case transferToWash
     case wash
+    case toning
 
     public var id: String { rawValue }
 
@@ -168,6 +169,8 @@ public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable 
             return "Transfer to Wash"
         case .wash:
             return "Wash"
+        case .toning:
+            return "Toning"
         }
     }
 }
@@ -176,6 +179,7 @@ public enum ChemicalRole: String, Codable, Hashable {
     case developer
     case stopBath
     case fixer
+    case toner
 
     public var phase: ProcessPhase {
         switch self {
@@ -185,6 +189,8 @@ public enum ChemicalRole: String, Codable, Hashable {
             return .stopBath
         case .fixer:
             return .fixer
+        case .toner:
+            return .toning
         }
     }
 }
@@ -219,19 +225,22 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         return Array(Int(minimum.rounded())...Int(maximum.rounded())).map(Double.init)
     }
 
-    /// True když je pro daný papír v datasheetu explicitní čas (přímo pro papír
-    /// nebo pro jeho typ). False znamená, že se čas jen dopočítává z jiných
-    /// pravidel = „bez záruky".
+    /// True když pro papír existuje aspoň jedno explicitní pravidlo v datasheetu
+    /// (podle `paperID`, jinak podle typu RC/FB). Nezohledňuje teplotu.
     public func isDocumented(for paper: Paper) -> Bool {
-        if timeRules.contains(where: { $0.paperID == paper.id }) {
-            return true
-        }
+        !documentedRules(for: paper).isEmpty
+    }
 
-        if timeRules.contains(where: { $0.paperType == paper.type }) {
-            return true
-        }
+    /// True jen když je zobrazený čas **přesně** z datasheetu pro daný papír
+    /// **a** zvolenou teplotu. Interpolace mezi teplotami (např. 34 °C mezi 30 a 35)
+    /// nebo fallback z jiného papíru = false → vykřičník.
+    public func isDocumented(for paper: Paper, temperatureCelsius: Double) -> Bool {
+        documentedRules(for: paper).contains { $0.temperatureCelsius == temperatureCelsius }
+    }
 
-        return false
+    /// Teploty přímo uvedené v datasheetu pro daný papír (bez vyplnění mezikroků).
+    public func documentedTemperatures(for paper: Paper) -> [Double] {
+        Array(Set(documentedRules(for: paper).map(\.temperatureCelsius))).sorted()
     }
 
     public func timeRange(for paper: Paper, temperatureCelsius: Double) -> TimeRange {
@@ -331,17 +340,23 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         capacityRules.first { $0.paperType == paperType }
     }
 
-    private func matchingRules(for paper: Paper) -> [ProcessingTimeRule] {
+    /// Pravidla, která jsou pro papír „oficiální“ (paperID, jinak paperType).
+    /// Na rozdíl od `matchingRules` **nepadá** na cizí papíry.
+    private func documentedRules(for paper: Paper) -> [ProcessingTimeRule] {
         let exactRules = timeRules.filter { $0.paperID == paper.id }
-
         if !exactRules.isEmpty {
             return exactRules
         }
 
-        let typeRules = timeRules.filter { $0.paperType == paper.type }
+        return timeRules.filter { $0.paperType == paper.type }
+    }
 
-        if !typeRules.isEmpty {
-            return typeRules
+    /// Pravidla použitá pro výpočet času: documented → jinak fallback na všechna
+    /// (interpolace / odhad bez záruky).
+    private func matchingRules(for paper: Paper) -> [ProcessingTimeRule] {
+        let documented = documentedRules(for: paper)
+        if !documented.isEmpty {
+            return documented
         }
 
         return timeRules
@@ -437,11 +452,6 @@ public struct TimeRange: Codable, Hashable {
 
     private func formatDuration(_ duration: TimeInterval) -> String {
         let totalSeconds = Int(duration.rounded())
-
-        if totalSeconds >= 60, totalSeconds % 60 == 0 {
-            return "\(totalSeconds / 60) min"
-        }
-
         return "\(totalSeconds) s"
     }
 }
@@ -494,6 +504,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
     public let id: UUID
     public var paper: Paper
     public var paperSize: PaperSize
+    public var testStripPaper: Paper
+    public var testStripPaperSize: PaperSize
     public var developer: Chemical
     public var developerDilution: ChemicalDilution
     public var stopBath: Chemical
@@ -509,12 +521,21 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
     public var transferAfterDeveloperDuration: TimeInterval
     public var transferAfterStopBathDuration: TimeInterval
     public var transferAfterFixerDuration: TimeInterval
+    public var washTemperatureCelsius: Double
+    public var isToningEnabled: Bool
+    public var toner: Chemical?
+    public var tonerDilution: ChemicalDilution?
+    public var toningTemperatureCelsius: Double
+    public var toningVolumeMilliliters: Int
+    public var toningDuration: TimeInterval
     public var phaseDurationOverrides: [ProcessPhase: TimeInterval]
 
     public init(
         id: UUID = UUID(),
         paper: Paper,
         paperSize: PaperSize,
+        testStripPaper: Paper? = nil,
+        testStripPaperSize: PaperSize? = nil,
         developer: Chemical,
         developerDilution: ChemicalDilution,
         stopBath: Chemical,
@@ -530,11 +551,21 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
         transferAfterDeveloperDuration: TimeInterval = 10,
         transferAfterStopBathDuration: TimeInterval = 10,
         transferAfterFixerDuration: TimeInterval = 10,
+        washTemperatureCelsius: Double = 20,
+        isToningEnabled: Bool = false,
+        toner: Chemical? = nil,
+        tonerDilution: ChemicalDilution? = nil,
+        toningTemperatureCelsius: Double = 25,
+        toningVolumeMilliliters: Int = 5_000,
+        toningDuration: TimeInterval = 300,
         phaseDurationOverrides: [ProcessPhase: TimeInterval] = [:]
     ) {
         self.id = id
         self.paper = paper
         self.paperSize = paperSize
+        self.testStripPaper = testStripPaper ?? paper
+        self.testStripPaperSize = testStripPaperSize
+            ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
         self.developer = developer
         self.developerDilution = developerDilution
         self.stopBath = stopBath
@@ -550,11 +581,77 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
         self.transferAfterDeveloperDuration = transferAfterDeveloperDuration
         self.transferAfterStopBathDuration = transferAfterStopBathDuration
         self.transferAfterFixerDuration = transferAfterFixerDuration
+        self.washTemperatureCelsius = washTemperatureCelsius
+        self.isToningEnabled = isToningEnabled
+        self.toner = toner
+        self.tonerDilution = tonerDilution
+        self.toningTemperatureCelsius = toningTemperatureCelsius
+        self.toningVolumeMilliliters = toningVolumeMilliliters
+        self.toningDuration = toningDuration
         self.phaseDurationOverrides = phaseDurationOverrides
     }
 
+    /// Session pro běh proužkové zkoušky – časy i vydatnost berou typ/rozměr ze sekce Papír zkouška.
+    public func testStripRunSession() -> DevelopmentSession {
+        var copy = self
+        copy.paper = testStripPaper
+        copy.paperSize = testStripPaperSize
+        return copy
+    }
+
+    // Zpětně kompatibilní dekódování – starší presety nemají nové klíče,
+    // proto pro chybějící hodnoty dosadíme rozumné výchozí hodnoty.
+    private enum CodingKeys: String, CodingKey {
+        case id, paper, paperSize, testStripPaper, testStripPaperSize
+        case developer, developerDilution
+        case stopBath, stopBathDilution, fixer, fixerDilution
+        case developerTemperatureCelsius, stopBathTemperatureCelsius, fixerTemperatureCelsius
+        case developerVolumeMilliliters, stopBathVolumeMilliliters, fixerVolumeMilliliters
+        case transferAfterDeveloperDuration, transferAfterStopBathDuration, transferAfterFixerDuration
+        case washTemperatureCelsius, isToningEnabled, toner, tonerDilution
+        case toningTemperatureCelsius, toningVolumeMilliliters, toningDuration
+        case phaseDurationOverrides
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        paper = try container.decode(Paper.self, forKey: .paper)
+        paperSize = try container.decode(PaperSize.self, forKey: .paperSize)
+        testStripPaper = try container.decodeIfPresent(Paper.self, forKey: .testStripPaper) ?? paper
+        testStripPaperSize = try container.decodeIfPresent(PaperSize.self, forKey: .testStripPaperSize)
+            ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
+        developer = try container.decode(Chemical.self, forKey: .developer)
+        developerDilution = try container.decode(ChemicalDilution.self, forKey: .developerDilution)
+        stopBath = try container.decode(Chemical.self, forKey: .stopBath)
+        stopBathDilution = try container.decode(ChemicalDilution.self, forKey: .stopBathDilution)
+        fixer = try container.decode(Chemical.self, forKey: .fixer)
+        fixerDilution = try container.decode(ChemicalDilution.self, forKey: .fixerDilution)
+        developerTemperatureCelsius = try container.decode(Double.self, forKey: .developerTemperatureCelsius)
+        stopBathTemperatureCelsius = try container.decode(Double.self, forKey: .stopBathTemperatureCelsius)
+        fixerTemperatureCelsius = try container.decode(Double.self, forKey: .fixerTemperatureCelsius)
+        developerVolumeMilliliters = try container.decode(Int.self, forKey: .developerVolumeMilliliters)
+        stopBathVolumeMilliliters = try container.decode(Int.self, forKey: .stopBathVolumeMilliliters)
+        fixerVolumeMilliliters = try container.decode(Int.self, forKey: .fixerVolumeMilliliters)
+        transferAfterDeveloperDuration = try container.decode(TimeInterval.self, forKey: .transferAfterDeveloperDuration)
+        transferAfterStopBathDuration = try container.decode(TimeInterval.self, forKey: .transferAfterStopBathDuration)
+        transferAfterFixerDuration = try container.decode(TimeInterval.self, forKey: .transferAfterFixerDuration)
+        washTemperatureCelsius = try container.decodeIfPresent(Double.self, forKey: .washTemperatureCelsius)
+            ?? fixerTemperatureCelsius
+        isToningEnabled = try container.decodeIfPresent(Bool.self, forKey: .isToningEnabled) ?? false
+        toner = try container.decodeIfPresent(Chemical.self, forKey: .toner)
+        tonerDilution = try container.decodeIfPresent(ChemicalDilution.self, forKey: .tonerDilution)
+        toningTemperatureCelsius = try container.decodeIfPresent(Double.self, forKey: .toningTemperatureCelsius) ?? 25
+        toningVolumeMilliliters = try container.decodeIfPresent(Int.self, forKey: .toningVolumeMilliliters) ?? 5_000
+        toningDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .toningDuration) ?? 300
+        phaseDurationOverrides = try container.decodeIfPresent(
+            [ProcessPhase: TimeInterval].self,
+            forKey: .phaseDurationOverrides
+        ) ?? [:]
+    }
+
     public func resolvedPhases() -> [TimedProcessPhase] {
-        [
+        var phases: [TimedProcessPhase] = [
             TimedProcessPhase(
                 phase: .developer,
                 duration: duration(
@@ -596,9 +693,20 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
             ),
             TimedProcessPhase(
                 phase: .wash,
-                duration: duration(for: .wash, defaultDuration: paper.washDuration(for: fixerTemperatureCelsius))
+                duration: duration(for: .wash, defaultDuration: paper.washDuration(for: washTemperatureCelsius))
             )
         ]
+
+        if isToningEnabled {
+            phases.append(
+                TimedProcessPhase(
+                    phase: .toning,
+                    duration: duration(for: .toning, defaultDuration: toningDuration)
+                )
+            )
+        }
+
+        return phases
     }
 
     private func duration(for phase: ProcessPhase, defaultDuration: TimeInterval) -> TimeInterval {

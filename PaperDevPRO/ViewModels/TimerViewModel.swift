@@ -21,6 +21,7 @@ public final class TimerViewModel: ObservableObject {
     public struct PaperRun: Identifiable, Equatable {
         public let id: UUID
         public let number: Int
+        public var isTestStrip: Bool
         public var session: DevelopmentSession
         public var phases: [TimedProcessPhase]
         public var currentPhaseIndex: Int
@@ -37,33 +38,41 @@ public final class TimerViewModel: ObservableObject {
 
     @Published public private(set) var session: DevelopmentSession
     @Published public private(set) var runs: [PaperRun]
-    @Published public private(set) var selectedRunID: UUID
+    @Published public private(set) var selectedRunID: UUID?
 
     private var timerTask: Task<Void, Never>?
-    private var nextRunNumber = 1
+    private var nextPaperNumber = 1
+    private var nextTestStripNumber = 1
 
-    public var selectedRun: PaperRun {
-        runs.first { $0.id == selectedRunID } ?? runs[0]
+    public var hasRuns: Bool { !runs.isEmpty }
+
+    public var selectedRun: PaperRun? {
+        guard let selectedRunID else { return nil }
+        return runs.first { $0.id == selectedRunID }
     }
 
     public var phases: [TimedProcessPhase] {
-        selectedRun.phases
+        selectedRun?.phases ?? []
     }
 
     public var currentPhaseIndex: Int {
-        selectedRun.currentPhaseIndex
+        selectedRun?.currentPhaseIndex ?? 0
     }
 
     public var remainingTime: TimeInterval {
-        selectedRun.remainingTime
+        selectedRun?.remainingTime ?? 0
     }
 
     public var state: TimerState {
-        selectedRun.state
+        selectedRun?.state ?? .idle
     }
 
-    public var currentPhase: TimedProcessPhase {
-        selectedRun.currentPhase
+    public var currentPhase: TimedProcessPhase? {
+        guard let selectedRun,
+              selectedRun.phases.indices.contains(selectedRun.currentPhaseIndex) else {
+            return nil
+        }
+        return selectedRun.phases[selectedRun.currentPhaseIndex]
     }
 
     public var hasRunningRuns: Bool {
@@ -71,12 +80,13 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public var progress: Double {
-        guard currentPhase.duration > 0 else { return 0 }
+        guard let currentPhase, currentPhase.duration > 0 else { return 0 }
         return 1 - (remainingTime / currentPhase.duration)
     }
 
     public var formattedRemainingTime: String {
-        formatTime(remainingTime)
+        guard hasRuns else { return "--:--" }
+        return formatTime(remainingTime)
     }
 
     public var nextPhaseTitle: String? {
@@ -88,10 +98,10 @@ public final class TimerViewModel: ObservableObject {
     public init(session: DevelopmentSession? = nil) {
         let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
         self.session = resolvedSession
-        let initialRun = Self.makeRun(number: 1, session: resolvedSession)
-        self.runs = [initialRun]
-        self.selectedRunID = initialRun.id
-        self.nextRunNumber = 2
+        self.runs = []
+        self.selectedRunID = nil
+        self.nextPaperNumber = 1
+        self.nextTestStripNumber = 1
     }
 
     deinit {
@@ -101,19 +111,25 @@ public final class TimerViewModel: ObservableObject {
     public func configure(session: DevelopmentSession) {
         stopTimerLoop()
         self.session = session
-        let configuredRun = Self.makeRun(number: 1, session: session)
-        self.runs = [configuredRun]
-        self.selectedRunID = configuredRun.id
-        self.nextRunNumber = 2
+        self.runs = []
+        self.selectedRunID = nil
+        self.nextPaperNumber = 1
+        self.nextTestStripNumber = 1
         setIdleTimerDisabled(false)
     }
 
     public func configureSelectedRun(session: DevelopmentSession) {
         self.session = session
 
+        guard hasRuns else {
+            refreshTimerLoop()
+            return
+        }
+
         mutateSelectedRun { run in
-            run.session = session
-            run.phases = session.resolvedPhases()
+            let runSession = run.isTestStrip ? session.testStripRunSession() : session
+            run.session = runSession
+            run.phases = runSession.resolvedPhases()
             run.currentPhaseIndex = 0
             run.remainingTime = run.phases[0].duration
             run.state = .idle
@@ -130,10 +146,38 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func addPaperRun() {
-        let run = Self.makeRun(number: nextRunNumber, session: session, state: .idle)
-        nextRunNumber += 1
+        let run = Self.makeRun(number: nextPaperNumber, session: session, isTestStrip: false)
+        nextPaperNumber += 1
         runs.append(run)
         selectedRunID = run.id
+    }
+
+    public func addTestStripRun() {
+        let run = Self.makeRun(
+            number: nextTestStripNumber,
+            session: session.testStripRunSession(),
+            isTestStrip: true
+        )
+        nextTestStripNumber += 1
+        runs.append(run)
+        selectedRunID = run.id
+    }
+
+    public func deleteRun(id: UUID) {
+        guard let index = runs.firstIndex(where: { $0.id == id }) else { return }
+
+        let wasSelected = runs[index].id == selectedRunID
+        if runs[index].state == .running {
+            runs[index].state = .idle
+            runs[index].lastTickDate = nil
+        }
+        runs.remove(at: index)
+
+        if wasSelected {
+            selectedRunID = runs.last?.id
+        }
+
+        refreshTimerLoop()
     }
 
     public func selectRun(id: UUID) {
@@ -142,6 +186,8 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func startOrPause() {
+        guard hasRuns else { return }
+
         mutateSelectedRun { run in
             switch run.state {
             case .idle, .paused:
@@ -161,6 +207,8 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func start() {
+        guard hasRuns else { return }
+
         mutateSelectedRun { run in
             guard run.state != .running else { return }
             run.state = .running
@@ -197,6 +245,7 @@ public final class TimerViewModel: ObservableObject {
     private static func makeRun(
         number: Int,
         session: DevelopmentSession,
+        isTestStrip: Bool = false,
         state: TimerState = .idle
     ) -> PaperRun {
         let phases = session.resolvedPhases()
@@ -204,6 +253,7 @@ public final class TimerViewModel: ObservableObject {
         return PaperRun(
             id: UUID(),
             number: number,
+            isTestStrip: isTestStrip,
             session: session,
             phases: phases,
             currentPhaseIndex: 0,
@@ -216,7 +266,8 @@ public final class TimerViewModel: ObservableObject {
     }
 
     private func mutateSelectedRun(_ mutation: (inout PaperRun) -> Void) {
-        guard let index = runs.firstIndex(where: { $0.id == selectedRunID }) else { return }
+        guard let selectedRunID,
+              let index = runs.firstIndex(where: { $0.id == selectedRunID }) else { return }
         mutation(&runs[index])
     }
 
@@ -292,17 +343,24 @@ public final class TimerViewModel: ObservableObject {
                 runs[index].usageWasRecorded = true
             }
 
-            triggerCompletionFeedback()
+            if isSelectedRun(at: index) {
+                triggerCompletionFeedback()
+            }
             return
         }
 
         runs[index].currentPhaseIndex += 1
         runs[index].remainingTime = runs[index].phases[runs[index].currentPhaseIndex].duration
         runs[index].lastTickDate = Date()
-        triggerPhaseChangeFeedback()
+
+        if isSelectedRun(at: index) {
+            triggerPhaseChangeFeedback()
+        }
     }
 
     private func triggerFinalSecondsWarningIfNeeded(for index: Int) {
+        guard isSelectedRun(at: index) else { return }
+
         let warningSecond = Int(ceil(runs[index].remainingTime))
         guard (1...5).contains(warningSecond), warningSecond != runs[index].lastWarningSecond else {
             return
@@ -310,6 +368,10 @@ public final class TimerViewModel: ObservableObject {
 
         runs[index].lastWarningSecond = warningSecond
         triggerWarningFeedback()
+    }
+
+    private func isSelectedRun(at index: Int) -> Bool {
+        runs.indices.contains(index) && runs[index].id == selectedRunID
     }
 
     private func formatTime(_ time: TimeInterval) -> String {
