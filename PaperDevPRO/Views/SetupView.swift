@@ -11,6 +11,7 @@ struct SetupView: View {
     let isEditingFinishedRun: Bool
     let onResetProject: () -> Void
     let onOpenSettings: () -> Void
+    let onBack: (() -> Void)?
     let onApply: (DevelopmentSession) -> Void
 
     @State private var selectedPaper: Paper
@@ -72,12 +73,14 @@ struct SetupView: View {
         isEditingFinishedRun: Bool = false,
         onResetProject: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {},
+        onBack: (() -> Void)? = nil,
         onApply: @escaping (DevelopmentSession) -> Void
     ) {
         self.initialSession = initialSession
         self.isEditingFinishedRun = isEditingFinishedRun
         self.onResetProject = onResetProject
         self.onOpenSettings = onOpenSettings
+        self.onBack = onBack
         self.onApply = onApply
         _selectedPaper = State(initialValue: initialSession.paper)
         _selectedPaperSize = State(initialValue: initialSession.paperSize)
@@ -124,7 +127,7 @@ struct SetupView: View {
             DarkroomPalette.black
                 .ignoresSafeArea()
 
-            ScrollView {
+            ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 28) {
                     topBar
                         .padding(.top, 8)
@@ -148,8 +151,10 @@ struct SetupView: View {
                     documentationLegend
                 }
                 .padding(20)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
             .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
 
             if let pendingReset {
                 resetConfirmationOverlay(for: pendingReset)
@@ -327,6 +332,14 @@ struct SetupView: View {
             isResettingProject = true
             pendingReset = nil
             onResetProject()
+            goBack()
+        }
+    }
+
+    private func goBack() {
+        if let onBack {
+            onBack()
+        } else {
             dismiss()
         }
     }
@@ -334,7 +347,7 @@ struct SetupView: View {
     private var topBar: some View {
         HStack {
             circularIconButton(systemName: "chevron.left") {
-                dismiss()
+                goBack()
             }
 
             Spacer()
@@ -359,11 +372,12 @@ struct SetupView: View {
 
             Text(copy.finishedRunNotice)
                 .darkroomFont(14, weight: .semibold)
-                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         }
         .foregroundStyle(DarkroomPalette.red)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(DarkroomPalette.red, lineWidth: 2)
@@ -2203,6 +2217,7 @@ struct SettingsSheetView: View {
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var isLanguagePickerPresented = false
     @State private var isRussianBlockedAlertPresented = false
+    var onBack: (() -> Void)? = nil
 
     private let cardColor = DarkroomPalette.black
     private var copy: AppCopy { settingsStore.copy }
@@ -2219,7 +2234,7 @@ struct SettingsSheetView: View {
             VStack(spacing: 18) {
                 settingsTopBar
 
-                ScrollView {
+                ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 18) {
                         settingsCard {
                             toggleRow(title: copy.sound, isOn: $settingsStore.isSoundEnabled)
@@ -2316,8 +2331,10 @@ struct SettingsSheetView: View {
                         }
                     }
                     .padding(.bottom, 24)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -2452,7 +2469,7 @@ struct SettingsSheetView: View {
     private var settingsTopBar: some View {
         HStack {
             Button {
-                dismiss()
+                goBack()
             } label: {
                 Image(systemName: "chevron.left")
                     .darkroomFont(24, weight: .bold)
@@ -2473,6 +2490,14 @@ struct SettingsSheetView: View {
 
             Color.clear
                 .frame(width: 56, height: 56)
+        }
+    }
+
+    private func goBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
         }
     }
 

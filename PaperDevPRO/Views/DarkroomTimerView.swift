@@ -138,7 +138,7 @@ public struct DarkroomTimerView: View {
     private var swipeBackEnabler: some View {
         #if canImport(UIKit)
         InteractivePopGestureEnabler()
-            .frame(width: 0, height: 0)
+            .frame(width: 1, height: 1)
             .accessibilityHidden(true)
         #else
         EmptyView()
@@ -157,13 +157,19 @@ public struct DarkroomTimerView: View {
                 },
                 onOpenSettings: {
                     navigationPath.append(.settings)
-                }
+                },
+                onBack: popRoute
             ) { session in
                 viewModel.configureSelectedRun(session: session)
             }
         case .settings:
-            SettingsSheetView()
+            SettingsSheetView(onBack: popRoute)
         }
+    }
+
+    private func popRoute() {
+        guard !navigationPath.isEmpty else { return }
+        navigationPath.removeLast()
     }
 
     private var timerContent: some View {
@@ -586,10 +592,7 @@ public struct DarkroomTimerView: View {
 }
 
 #if canImport(UIKit)
-/// Umožní „swipe zleva doprava" (interaktivní pop) i když je systémový navigation bar
-/// skrytý. Dřív to řešila kategorie nad `UINavigationController`, která přepisovala
-/// `viewDidLoad` a měnila delegáta gesta globálně pro celou aplikaci; tady se to týká
-/// jen navigation controlleru, ve kterém je vložená tato jedna obrazovka.
+/// Restores the native iOS edge-swipe back gesture while the navigation bar is hidden.
 struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -597,13 +600,22 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
         GestureAttachingController(coordinator: context.coordinator)
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        (uiViewController as? GestureAttachingController)?.attach()
+    }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         weak var navigationController: UINavigationController?
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             (navigationController?.viewControllers.count ?? 0) > 1
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
         }
     }
 
@@ -621,11 +633,38 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
 
         override func didMove(toParent parent: UIViewController?) {
             super.didMove(toParent: parent)
+            attach()
+        }
 
-            guard let navigationController = parent?.navigationController else { return }
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            attach()
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            attach()
+        }
+
+        func attach() {
+            guard let navigationController = nearestNavigationController() else { return }
             coordinator.navigationController = navigationController
             navigationController.interactivePopGestureRecognizer?.isEnabled = true
             navigationController.interactivePopGestureRecognizer?.delegate = coordinator
+        }
+
+        private func nearestNavigationController() -> UINavigationController? {
+            var current: UIViewController? = self
+            while let viewController = current {
+                if let navigationController = viewController.navigationController {
+                    return navigationController
+                }
+                if let navigationController = viewController as? UINavigationController {
+                    return navigationController
+                }
+                current = viewController.parent
+            }
+            return nil
         }
     }
 }
