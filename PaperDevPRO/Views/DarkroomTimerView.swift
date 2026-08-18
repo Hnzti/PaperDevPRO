@@ -10,19 +10,15 @@ public enum DarkroomPalette {
 }
 
 /// Point sizes that follow Dynamic Type, capped so the darkroom layout does not explode.
-private struct DarkroomFontModifier: ViewModifier {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    let size: CGFloat
-    let weight: Font.Weight
-    let design: Font.Design
-    let textStyle: Font.TextStyle
-
-    func body(content: Content) -> some View {
-        content.font(scaledFont)
-    }
-
-    private var scaledFont: Font {
+/// Built as a `Font` (not a custom `ViewModifier`) so Setup's already-huge view type
+/// does not grow another generic wrapper around every label.
+extension Font {
+    static func darkroom(
+        _ size: CGFloat,
+        weight: Font.Weight = .regular,
+        design: Font.Design = .default,
+        relativeTo textStyle: Font.TextStyle = .body
+    ) -> Font {
         #if canImport(UIKit)
         let metrics = UIFontMetrics(forTextStyle: textStyle.uiTextStyle)
         let base: UIFont
@@ -59,9 +55,7 @@ extension View {
         design: Font.Design = .default,
         relativeTo textStyle: Font.TextStyle = .body
     ) -> some View {
-        modifier(
-            DarkroomFontModifier(size: size, weight: weight, design: design, textStyle: textStyle)
-        )
+        font(.darkroom(size, weight: weight, design: design, relativeTo: textStyle))
     }
 
     func darkroomFrame(width: CGFloat, height: CGFloat) -> some View {

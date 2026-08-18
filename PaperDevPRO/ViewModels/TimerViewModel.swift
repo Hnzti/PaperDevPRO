@@ -111,6 +111,8 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func configureSelectedRun(session: DevelopmentSession) {
+        guard session != self.session else { return }
+
         self.session = session
 
         guard hasRuns else {

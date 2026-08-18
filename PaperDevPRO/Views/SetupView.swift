@@ -115,7 +115,8 @@ struct SetupView: View {
     }
 
     var body: some View {
-        trackingStaleOverrides(trackingVolumeChanges(screen))
+        screen
+            .background(setupChangeTrackers)
     }
 
     private var screen: some View {
@@ -134,213 +135,15 @@ struct SetupView: View {
 
                     projectResetButton
 
-                    settingsSection(title: copy.sectionPresets) {
-                        pickerRow(
-                            title: copy.rowPreset,
-                            value: presetStore.presets.isEmpty ? copy.noPresetSaved : copy.presetsSavedCount(presetStore.presets.count),
-                            picker: .presets
-                        )
-                    }
-
-                    settingsSection(title: copy.sectionPaper) {
-                        pickerRow(title: copy.rowPaperType, value: selectedPaper.displayName, picker: .paper)
-                        divider
-                        pickerRow(title: copy.rowSize, value: sizeText(selectedPaperSize), picker: .paperSize)
-                    }
-
-                    settingsSection(title: copy.sectionTestStripPaper) {
-                        pickerRow(title: copy.rowPaperType, value: selectedTestStripPaper.displayName, picker: .testStripPaper)
-                        divider
-                        pickerRow(title: copy.rowSize, value: sizeText(selectedTestStripPaperSize), picker: .testStripPaperSize)
-                    }
-
-                    settingsSection(title: copy.sectionDeveloper) {
-                        pickerRow(title: copy.rowChemistry, value: selectedDeveloper.displayName, picker: .developer)
-                        divider
-                        pickerRow(title: copy.rowDilution, value: selectedDeveloperDilution.ratio, picker: .developerDilution)
-                        divider
-                        pickerRow(title: copy.rowVolume, value: millilitersText(developerVolumeMilliliters), picker: .developerVolume)
-                        divider
-                        mixRows(dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
-                        divider
-                        temperatureRow(
-                            dilution: selectedDeveloperDilution,
-                            chemicalManufacturer: selectedDeveloper.manufacturer,
-                            temperature: selectedDeveloperTemperature,
-                            picker: .developerTemperature
-                        )
-                        divider
-                        timeRow(
-                            dilution: selectedDeveloperDilution,
-                            chemicalManufacturer: selectedDeveloper.manufacturer,
-                            temperatureCelsius: selectedDeveloperTemperature
-                        )
-                        divider
-                        capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
-                        divider
-                        usageRow(
-                            chemical: selectedDeveloper,
-                            dilution: selectedDeveloperDilution,
-                            isSynced: isDeveloperUsageSynced
-                        ) {
-                            toggleUsageSync(for: .developer)
-                        } onReset: {
-                            resetUsage(for: .developer)
-                        }
-                        divider
-                        transferRow(
-                            value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)),
-                            picker: .transferAfterDeveloper,
-                            isSynced: isDeveloperTransferSynced
-                        ) {
-                            toggleSync(for: .afterDeveloper)
-                        }
-                    }
-
-                    settingsSection(title: copy.sectionStopBath) {
-                        pickerRow(title: copy.rowChemistry, value: selectedStopBath.displayName, picker: .stopBath)
-                        divider
-                        pickerRow(title: copy.rowDilution, value: selectedStopBathDilution.ratio, picker: .stopBathDilution)
-                        divider
-                        pickerRow(title: copy.rowVolume, value: millilitersText(stopBathVolumeMilliliters), picker: .stopBathVolume)
-                        divider
-                        mixRows(dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
-                        divider
-                        temperatureRow(
-                            dilution: selectedStopBathDilution,
-                            chemicalManufacturer: selectedStopBath.manufacturer,
-                            temperature: selectedStopBathTemperature,
-                            picker: .stopBathTemperature
-                        )
-                        divider
-                        timeRow(
-                            dilution: selectedStopBathDilution,
-                            chemicalManufacturer: selectedStopBath.manufacturer,
-                            temperatureCelsius: selectedStopBathTemperature
-                        )
-                        divider
-                        capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
-                        divider
-                        usageRow(
-                            chemical: selectedStopBath,
-                            dilution: selectedStopBathDilution,
-                            isSynced: isStopBathUsageSynced
-                        ) {
-                            toggleUsageSync(for: .stopBath)
-                        } onReset: {
-                            resetUsage(for: .stopBath)
-                        }
-                        divider
-                        transferRow(
-                            value: durationText(for: TimeInterval(transferAfterStopBathSeconds)),
-                            picker: .transferAfterStopBath,
-                            isSynced: isStopBathTransferSynced
-                        ) {
-                            toggleSync(for: .afterStopBath)
-                        }
-                    }
-
-                    settingsSection(title: copy.sectionFixer) {
-                        pickerRow(title: copy.rowChemistry, value: selectedFixer.displayName, picker: .fixer)
-                        divider
-                        pickerRow(title: copy.rowDilution, value: selectedFixerDilution.ratio, picker: .fixerDilution)
-                        divider
-                        pickerRow(title: copy.rowVolume, value: millilitersText(fixerVolumeMilliliters), picker: .fixerVolume)
-                        divider
-                        mixRows(dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
-                        divider
-                        temperatureRow(
-                            dilution: selectedFixerDilution,
-                            chemicalManufacturer: selectedFixer.manufacturer,
-                            temperature: selectedFixerTemperature,
-                            picker: .fixerTemperature
-                        )
-                        divider
-                        timeRow(
-                            dilution: selectedFixerDilution,
-                            chemicalManufacturer: selectedFixer.manufacturer,
-                            temperatureCelsius: selectedFixerTemperature
-                        )
-                        divider
-                        capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
-                        divider
-                        usageRow(
-                            chemical: selectedFixer,
-                            dilution: selectedFixerDilution,
-                            isSynced: isFixerUsageSynced
-                        ) {
-                            toggleUsageSync(for: .fixer)
-                        } onReset: {
-                            resetUsage(for: .fixer)
-                        }
-                        divider
-                        transferRow(
-                            value: durationText(for: TimeInterval(transferAfterFixerSeconds)),
-                            picker: .transferAfterFixer,
-                            isSynced: isFixerTransferSynced
-                        ) {
-                            toggleSync(for: .afterFixer)
-                        }
-                    }
-
-                    settingsSection(title: copy.sectionWash) {
-                        pickerRow(
-                            title: copy.rowWaterTemperature,
-                            value: temperatureText(washTemperature),
-                            picker: .washTemperature
-                        )
-                        divider
-                        readOnlyRow(
-                            title: copy.rowWashTime,
-                            value: durationText(for: selectedPaper.washDuration(for: washTemperature))
-                        )
-                    }
-
-                    settingsSection(title: copy.sectionToning) {
-                        toningToggleRow
-
-                        if isToningEnabled {
-                            divider
-                            pickerRow(title: copy.rowChemistry, value: selectedToner.displayName, picker: .toner)
-                            divider
-                            pickerRow(title: copy.rowDilution, value: selectedTonerDilution.ratio, picker: .tonerDilution)
-                            divider
-                            pickerRow(title: copy.rowVolume, value: millilitersText(tonerVolumeMilliliters), picker: .tonerVolume)
-                            divider
-                            mixRows(dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
-                            divider
-                            pickerRow(title: copy.rowTemperature, value: temperatureText(selectedTonerTemperature), picker: .tonerTemperature)
-                            divider
-                            pickerRow(title: copy.rowTime, value: durationText(for: TimeInterval(toningSeconds)), picker: .toningDuration)
-                            divider
-                            capacityRow(chemical: selectedToner, dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
-                            divider
-                            usageRow(
-                                chemical: selectedToner,
-                                dilution: selectedTonerDilution,
-                                isSynced: isTonerUsageSynced
-                            ) {
-                                isTonerUsageSynced.toggle()
-                            } onReset: {
-                                usageStore.reset(chemical: selectedToner, dilution: selectedTonerDilution)
-                            }
-                        }
-                    }
-
-                    settingsSection(title: copy.sectionProcess) {
-                        let phases = computedSession.resolvedPhases()
-                        ForEach(Array(phases.enumerated()), id: \.element.id) { index, phase in
-                            pickerRow(
-                                title: displayTitle(for: phase.phase),
-                                value: durationText(for: phase.duration),
-                                picker: processPicker(for: phase.phase)
-                            )
-
-                            if index < phases.count - 1 {
-                                divider
-                            }
-                        }
-                    }
+                    presetsSection
+                    paperSection
+                    testStripSection
+                    developerSection
+                    stopBathSection
+                    fixerSection
+                    washSection
+                    toningSection
+                    processSection
 
                     documentationLegend
                 }
@@ -364,7 +167,7 @@ struct SetupView: View {
             onApply(session)
         }
         .sheet(item: $activePicker) { picker in
-            pickerSheet(for: picker)
+            AnyView(pickerSheet(for: picker))
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(DarkroomPalette.black)
@@ -380,40 +183,77 @@ struct SetupView: View {
         }
     }
 
-    /// Topping a bath up revives it, so the usage ledger has to learn about the new volume.
-    private func trackingVolumeChanges<Content: View>(_ content: Content) -> some View {
-        content
-            .onChange(of: developerVolumeMilliliters) { _, milliliters in
-                registerVolume(milliliters, chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+    /// Keep volume / override observers off the main screen type. Wrapping the whole
+    /// form in generic `onChange` helpers made Swift metadata recurse until the stack died.
+    private var setupChangeTrackers: some View {
+        Color.clear
+            .accessibilityHidden(true)
+            .onChange(of: volumeSnapshot) { _, snapshot in
+                registerVolume(snapshot.developer, chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+                registerVolume(snapshot.stopBath, chemical: selectedStopBath, dilution: selectedStopBathDilution)
+                registerVolume(snapshot.fixer, chemical: selectedFixer, dilution: selectedFixerDilution)
+                registerVolume(snapshot.toner, chemical: selectedToner, dilution: selectedTonerDilution)
             }
-            .onChange(of: stopBathVolumeMilliliters) { _, milliliters in
-                registerVolume(milliliters, chemical: selectedStopBath, dilution: selectedStopBathDilution)
+            .onChange(of: overrideIdentity) { old, new in
+                applyStaleOverrideCleanup(from: old, to: new)
             }
-            .onChange(of: fixerVolumeMilliliters) { _, milliliters in
-                registerVolume(milliliters, chemical: selectedFixer, dilution: selectedFixerDilution)
-            }
-            .onChange(of: tonerVolumeMilliliters) { _, milliliters in
-                registerVolume(milliliters, chemical: selectedToner, dilution: selectedTonerDilution)
-            }
+    }
+
+    private var volumeSnapshot: SetupVolumeSnapshot {
+        SetupVolumeSnapshot(
+            developer: developerVolumeMilliliters,
+            stopBath: stopBathVolumeMilliliters,
+            fixer: fixerVolumeMilliliters,
+            toner: tonerVolumeMilliliters
+        )
+    }
+
+    private var overrideIdentity: SetupOverrideIdentity {
+        SetupOverrideIdentity(
+            paperID: selectedPaper.id,
+            developerID: selectedDeveloper.id,
+            developerDilutionID: selectedDeveloperDilution.id,
+            developerTemperature: selectedDeveloperTemperature,
+            stopBathID: selectedStopBath.id,
+            stopBathDilutionID: selectedStopBathDilution.id,
+            stopBathTemperature: selectedStopBathTemperature,
+            fixerID: selectedFixer.id,
+            fixerDilutionID: selectedFixerDilution.id,
+            fixerTemperature: selectedFixerTemperature,
+            washTemperature: washTemperature,
+            tonerID: selectedToner.id,
+            tonerDilutionID: selectedTonerDilution.id
+        )
     }
 
     /// A manual time belongs to one combination of paper + chemistry + temperature.
     /// Once any of those changes the override is stale, so it is dropped.
-    private func trackingStaleOverrides<Content: View>(_ content: Content) -> some View {
-        content
-            .onChange(of: selectedPaper) { _, _ in phaseDurationOverrides.removeAll() }
-            .onChange(of: selectedDeveloper) { _, _ in phaseDurationOverrides[.developer] = nil }
-            .onChange(of: selectedDeveloperDilution) { _, _ in phaseDurationOverrides[.developer] = nil }
-            .onChange(of: selectedDeveloperTemperature) { _, _ in phaseDurationOverrides[.developer] = nil }
-            .onChange(of: selectedStopBath) { _, _ in phaseDurationOverrides[.stopBath] = nil }
-            .onChange(of: selectedStopBathDilution) { _, _ in phaseDurationOverrides[.stopBath] = nil }
-            .onChange(of: selectedStopBathTemperature) { _, _ in phaseDurationOverrides[.stopBath] = nil }
-            .onChange(of: selectedFixer) { _, _ in phaseDurationOverrides[.fixer] = nil }
-            .onChange(of: selectedFixerDilution) { _, _ in phaseDurationOverrides[.fixer] = nil }
-            .onChange(of: selectedFixerTemperature) { _, _ in phaseDurationOverrides[.fixer] = nil }
-            .onChange(of: washTemperature) { _, _ in phaseDurationOverrides[.wash] = nil }
-            .onChange(of: selectedToner) { _, _ in phaseDurationOverrides[.toning] = nil }
-            .onChange(of: selectedTonerDilution) { _, _ in phaseDurationOverrides[.toning] = nil }
+    private func applyStaleOverrideCleanup(from old: SetupOverrideIdentity, to new: SetupOverrideIdentity) {
+        if old.paperID != new.paperID {
+            phaseDurationOverrides.removeAll()
+            return
+        }
+        if old.developerID != new.developerID
+            || old.developerDilutionID != new.developerDilutionID
+            || old.developerTemperature != new.developerTemperature {
+            phaseDurationOverrides[.developer] = nil
+        }
+        if old.stopBathID != new.stopBathID
+            || old.stopBathDilutionID != new.stopBathDilutionID
+            || old.stopBathTemperature != new.stopBathTemperature {
+            phaseDurationOverrides[.stopBath] = nil
+        }
+        if old.fixerID != new.fixerID
+            || old.fixerDilutionID != new.fixerDilutionID
+            || old.fixerTemperature != new.fixerTemperature {
+            phaseDurationOverrides[.fixer] = nil
+        }
+        if old.washTemperature != new.washTemperature {
+            phaseDurationOverrides[.wash] = nil
+        }
+        if old.tonerID != new.tonerID || old.tonerDilutionID != new.tonerDilutionID {
+            phaseDurationOverrides[.toning] = nil
+        }
     }
 
     private func resetConfirmationOverlay(for kind: ResetKind) -> some View {
@@ -1362,25 +1202,237 @@ struct SetupView: View {
         .buttonStyle(.plain)
     }
 
+    private var presetsSection: SetupCardSection {
+        settingsSection(title: copy.sectionPresets) {
+            pickerRow(
+                title: copy.rowPreset,
+                value: presetStore.presets.isEmpty ? copy.noPresetSaved : copy.presetsSavedCount(presetStore.presets.count),
+                picker: .presets
+            )
+        }
+    }
+
+    private var paperSection: SetupCardSection {
+        settingsSection(title: copy.sectionPaper) {
+            pickerRow(title: copy.rowPaperType, value: selectedPaper.displayName, picker: .paper)
+            divider
+            pickerRow(title: copy.rowSize, value: sizeText(selectedPaperSize), picker: .paperSize)
+        }
+    }
+
+    private var testStripSection: SetupCardSection {
+        settingsSection(title: copy.sectionTestStripPaper) {
+            pickerRow(title: copy.rowPaperType, value: selectedTestStripPaper.displayName, picker: .testStripPaper)
+            divider
+            pickerRow(title: copy.rowSize, value: sizeText(selectedTestStripPaperSize), picker: .testStripPaperSize)
+        }
+    }
+
+    private var developerSection: SetupCardSection {
+        settingsSection(title: copy.sectionDeveloper) {
+            pickerRow(title: copy.rowChemistry, value: selectedDeveloper.displayName, picker: .developer)
+            divider
+            pickerRow(title: copy.rowDilution, value: selectedDeveloperDilution.ratio, picker: .developerDilution)
+            divider
+            pickerRow(title: copy.rowVolume, value: millilitersText(developerVolumeMilliliters), picker: .developerVolume)
+            divider
+            mixRows(dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
+            divider
+            temperatureRow(
+                dilution: selectedDeveloperDilution,
+                chemicalManufacturer: selectedDeveloper.manufacturer,
+                temperature: selectedDeveloperTemperature,
+                picker: .developerTemperature
+            )
+            divider
+            timeRow(
+                dilution: selectedDeveloperDilution,
+                chemicalManufacturer: selectedDeveloper.manufacturer,
+                temperatureCelsius: selectedDeveloperTemperature
+            )
+            divider
+            capacityRow(chemical: selectedDeveloper, dilution: selectedDeveloperDilution, totalMilliliters: developerVolumeMilliliters)
+            divider
+            usageRow(
+                chemical: selectedDeveloper,
+                dilution: selectedDeveloperDilution,
+                isSynced: isDeveloperUsageSynced
+            ) {
+                toggleUsageSync(for: .developer)
+            } onReset: {
+                resetUsage(for: .developer)
+            }
+            divider
+            transferRow(
+                value: durationText(for: TimeInterval(transferAfterDeveloperSeconds)),
+                picker: .transferAfterDeveloper,
+                isSynced: isDeveloperTransferSynced
+            ) {
+                toggleSync(for: .afterDeveloper)
+            }
+        }
+    }
+
+    private var stopBathSection: SetupCardSection {
+        settingsSection(title: copy.sectionStopBath) {
+            pickerRow(title: copy.rowChemistry, value: selectedStopBath.displayName, picker: .stopBath)
+            divider
+            pickerRow(title: copy.rowDilution, value: selectedStopBathDilution.ratio, picker: .stopBathDilution)
+            divider
+            pickerRow(title: copy.rowVolume, value: millilitersText(stopBathVolumeMilliliters), picker: .stopBathVolume)
+            divider
+            mixRows(dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
+            divider
+            temperatureRow(
+                dilution: selectedStopBathDilution,
+                chemicalManufacturer: selectedStopBath.manufacturer,
+                temperature: selectedStopBathTemperature,
+                picker: .stopBathTemperature
+            )
+            divider
+            timeRow(
+                dilution: selectedStopBathDilution,
+                chemicalManufacturer: selectedStopBath.manufacturer,
+                temperatureCelsius: selectedStopBathTemperature
+            )
+            divider
+            capacityRow(chemical: selectedStopBath, dilution: selectedStopBathDilution, totalMilliliters: stopBathVolumeMilliliters)
+            divider
+            usageRow(
+                chemical: selectedStopBath,
+                dilution: selectedStopBathDilution,
+                isSynced: isStopBathUsageSynced
+            ) {
+                toggleUsageSync(for: .stopBath)
+            } onReset: {
+                resetUsage(for: .stopBath)
+            }
+            divider
+            transferRow(
+                value: durationText(for: TimeInterval(transferAfterStopBathSeconds)),
+                picker: .transferAfterStopBath,
+                isSynced: isStopBathTransferSynced
+            ) {
+                toggleSync(for: .afterStopBath)
+            }
+        }
+    }
+
+    private var fixerSection: SetupCardSection {
+        settingsSection(title: copy.sectionFixer) {
+            pickerRow(title: copy.rowChemistry, value: selectedFixer.displayName, picker: .fixer)
+            divider
+            pickerRow(title: copy.rowDilution, value: selectedFixerDilution.ratio, picker: .fixerDilution)
+            divider
+            pickerRow(title: copy.rowVolume, value: millilitersText(fixerVolumeMilliliters), picker: .fixerVolume)
+            divider
+            mixRows(dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
+            divider
+            temperatureRow(
+                dilution: selectedFixerDilution,
+                chemicalManufacturer: selectedFixer.manufacturer,
+                temperature: selectedFixerTemperature,
+                picker: .fixerTemperature
+            )
+            divider
+            timeRow(
+                dilution: selectedFixerDilution,
+                chemicalManufacturer: selectedFixer.manufacturer,
+                temperatureCelsius: selectedFixerTemperature
+            )
+            divider
+            capacityRow(chemical: selectedFixer, dilution: selectedFixerDilution, totalMilliliters: fixerVolumeMilliliters)
+            divider
+            usageRow(
+                chemical: selectedFixer,
+                dilution: selectedFixerDilution,
+                isSynced: isFixerUsageSynced
+            ) {
+                toggleUsageSync(for: .fixer)
+            } onReset: {
+                resetUsage(for: .fixer)
+            }
+            divider
+            transferRow(
+                value: durationText(for: TimeInterval(transferAfterFixerSeconds)),
+                picker: .transferAfterFixer,
+                isSynced: isFixerTransferSynced
+            ) {
+                toggleSync(for: .afterFixer)
+            }
+        }
+    }
+
+    private var washSection: SetupCardSection {
+        settingsSection(title: copy.sectionWash) {
+            pickerRow(
+                title: copy.rowWaterTemperature,
+                value: temperatureText(washTemperature),
+                picker: .washTemperature
+            )
+            divider
+            readOnlyRow(
+                title: copy.rowWashTime,
+                value: durationText(for: selectedPaper.washDuration(for: washTemperature))
+            )
+        }
+    }
+
+    private var toningSection: SetupCardSection {
+        settingsSection(title: copy.sectionToning) {
+            toningToggleRow
+
+            if isToningEnabled {
+                divider
+                pickerRow(title: copy.rowChemistry, value: selectedToner.displayName, picker: .toner)
+                divider
+                pickerRow(title: copy.rowDilution, value: selectedTonerDilution.ratio, picker: .tonerDilution)
+                divider
+                pickerRow(title: copy.rowVolume, value: millilitersText(tonerVolumeMilliliters), picker: .tonerVolume)
+                divider
+                mixRows(dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
+                divider
+                pickerRow(title: copy.rowTemperature, value: temperatureText(selectedTonerTemperature), picker: .tonerTemperature)
+                divider
+                pickerRow(title: copy.rowTime, value: durationText(for: TimeInterval(toningSeconds)), picker: .toningDuration)
+                divider
+                capacityRow(chemical: selectedToner, dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
+                divider
+                usageRow(
+                    chemical: selectedToner,
+                    dilution: selectedTonerDilution,
+                    isSynced: isTonerUsageSynced
+                ) {
+                    isTonerUsageSynced.toggle()
+                } onReset: {
+                    usageStore.reset(chemical: selectedToner, dilution: selectedTonerDilution)
+                }
+            }
+        }
+    }
+
+    private var processSection: SetupCardSection {
+        settingsSection(title: copy.sectionProcess) {
+            let phases = computedSession.resolvedPhases()
+            ForEach(Array(phases.enumerated()), id: \.element.id) { index, phase in
+                pickerRow(
+                    title: displayTitle(for: phase.phase),
+                    value: durationText(for: phase.duration),
+                    picker: processPicker(for: phase.phase)
+                )
+
+                if index < phases.count - 1 {
+                    divider
+                }
+            }
+        }
+    }
+
     private func settingsSection<Content: View>(
         title: String,
         @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .darkroomFont(16, weight: .semibold)
-                .foregroundStyle(DarkroomPalette.red)
-                .padding(.leading, 18)
-
-            VStack(spacing: 0) {
-                content()
-            }
-            .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
-            )
-        }
+    ) -> SetupCardSection {
+        SetupCardSection(title: title, cardColor: cardColor, content: content)
     }
 
     private func pickerRow(title: String, value: String, picker: SetupPicker) -> some View {
@@ -2791,6 +2843,64 @@ private struct PresetsSheetView: View {
             presetStore.delete(preset)
         }
     }
+}
+
+/// Type-erased card so SetupView's `body` is a handful of named views, not one giant generic.
+private struct SetupCardSection: View {
+    let title: String
+    let cardColor: Color
+    let content: AnyView
+
+    init<Content: View>(
+        title: String,
+        cardColor: Color,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.cardColor = cardColor
+        self.content = AnyView(content())
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .darkroomFont(16, weight: .semibold)
+                .foregroundStyle(DarkroomPalette.red)
+                .padding(.leading, 18)
+
+            VStack(spacing: 0) {
+                content
+            }
+            .background(RoundedRectangle(cornerRadius: 24).fill(cardColor))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1)
+            )
+        }
+    }
+}
+
+private struct SetupVolumeSnapshot: Equatable {
+    var developer: Int
+    var stopBath: Int
+    var fixer: Int
+    var toner: Int
+}
+
+private struct SetupOverrideIdentity: Equatable {
+    var paperID: String
+    var developerID: String
+    var developerDilutionID: String
+    var developerTemperature: Double
+    var stopBathID: String
+    var stopBathDilutionID: String
+    var stopBathTemperature: Double
+    var fixerID: String
+    var fixerDilutionID: String
+    var fixerTemperature: Double
+    var washTemperature: Double
+    var tonerID: String
+    var tonerDilutionID: String
 }
 
 #Preview {
