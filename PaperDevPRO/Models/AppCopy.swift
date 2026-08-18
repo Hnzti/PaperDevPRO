@@ -267,7 +267,6 @@ struct AppCopy {
 
     var supportSections: [(title: String, body: String)] {
         [
-            ("", t("supportIntroBody")),
             (t("privacyContactTitle"), tf("supportContactBody", AppInfo.contactEmail)),
         ]
     }

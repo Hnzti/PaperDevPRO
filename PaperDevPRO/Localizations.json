@@ -3001,25 +3001,6 @@
     "ja": "プライバシーに関する問い合わせは Jan Kalina（%@）まで。",
     "zh": "如有隐私问题，请联系 Jan Kalina：%@。"
   },
-  "supportIntroBody": {
-    "cs": "PaperDev je offline časovač do temné komory pro celý mokrý proces černobílého fotografického papíru.",
-    "en": "PaperDev is an offline darkroom timer for the full wet process of black-and-white photographic paper.",
-    "de": "PaperDev ist ein Offline-Timer für den gesamten Nassprozess von Schwarzweiß-Fotopapier.",
-    "fr": "PaperDev est un minuteur de chambre noire hors ligne pour tout le process humide du papier photo noir et blanc.",
-    "es": "PaperDev es un temporizador de cuarto oscuro sin conexión para todo el proceso húmedo del papel fotográfico en blanco y negro.",
-    "it": "PaperDev è un timer per camera oscura offline per l’intero processo umido della carta fotografica in bianco e nero.",
-    "sl": "PaperDev je brezžični časovnik za temnico za celoten mokri postopek črno-belega fotografskega papirja.",
-    "uk": "PaperDev — офлайн-таймер для темної кімнати на весь мокрий процес чорно-білого фотопаперу.",
-    "sv": "PaperDev är en offlinetimer för mörkrummet för hela våtprocessen med svartvit fotopapper.",
-    "fi": "PaperDev on offline-ajastin pimiöön koko mustavalkoisen valokuvapaperin märkäprosessia varten.",
-    "nb": "PaperDev er en offline-timer for mørkerommet for hele våtprosessen med svart-hvitt fotopapir.",
-    "da": "PaperDev er en offline-timer til mørkekammeret til hele vådprocessen med sort-hvidt fotopapir.",
-    "sk": "PaperDev je offline časovač do temnej komory pre celý mokrý proces čiernobieleho fotografického papiera.",
-    "ru": "PaperDev — офлайн-таймер для тёмной комнаты на весь мокрый процесс чёрно-белой фотобумаги.",
-    "el": "Το PaperDev είναι ένα χρονόμετρο σκοτεινού θαλάμου χωρίς σύνδεση για όλη την υγρή επεξεργασία ασπρόμαυρου φωτογραφικού χαρτιού.",
-    "ja": "PaperDevは白黒印画紙の全ウェット工程向けのオフライン暗室タイマーです。",
-    "zh": "PaperDev 是离线暗房计时器，覆盖黑白相纸的完整湿法流程。"
-  },
   "supportContactBody": {
     "cs": "Dotazy a připomínky pište Janu Kalinovi na %@.",
     "en": "For questions or feedback, write to Jan Kalina at %@.",
