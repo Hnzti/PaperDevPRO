@@ -43,7 +43,7 @@ final class LocalizationTests: XCTestCase {
 
     func testNoUserFacingStringStillReadsAsRawEnglishStatus() {
         // These used to sit in the Czech column verbatim.
-        let keys = ["ready", "running", "paused", "complete", "done", "setup", "pause", "resume"]
+        let keys = ["ready", "running", "paused", "complete", "done"]
 
         for key in keys {
             let czech = table[key]?["cs"] ?? ""
@@ -104,6 +104,20 @@ final class LocalizationTests: XCTestCase {
     func testResetWordIsResetInEveryLanguage() {
         for language in AppLanguage.allCases {
             XCTAssertEqual(table["reset"]?[language.rawValue], "RESET")
+        }
+    }
+
+    func testTimerControlButtonsStayEnglishInEveryLanguage() {
+        let expected = [
+            "start": "START",
+            "pause": "PAUSE",
+            "resume": "RESUME",
+            "setup": "SETUP",
+        ]
+        for (key, value) in expected {
+            for language in AppLanguage.allCases {
+                XCTAssertEqual(table[key]?[language.rawValue], value, "\(key) / \(language.rawValue)")
+            }
         }
     }
 
