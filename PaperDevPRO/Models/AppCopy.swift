@@ -1,8 +1,11 @@
 import Foundation
 
 enum AppInfo {
-    /// Brand name shown inside the app (Info.plist carries the shorter home-screen name).
-    static let displayName = "PaperDeveloper"
+    static let displayName = "PaperDev"
+    static let supportURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/issues")!
+    static let privacyURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/blob/main/docs/privacy.html")!
+    /// Same sentence in every language – do not translate.
+    static let russianBlockedMessage = "Русский военный корабль, иди на хуй!"
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
@@ -41,13 +44,13 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .french: return "Français"
         case .spanish: return "Español"
         case .italian: return "Italiano"
-        case .slovenian: return "Slovenščina"
+        case .slovenian: return "Slovinština"
         case .ukrainian: return "Українська"
         case .swedish: return "Svenska"
         case .finnish: return "Suomi"
         case .norwegian: return "Norsk bokmål"
         case .danish: return "Dansk"
-        case .slovak: return "Slovenčina"
+        case .slovak: return "Slovenština"
         case .russian: return "Русский"
         case .greek: return "Ελληνικά"
         case .japanese: return "日本語"
@@ -166,7 +169,6 @@ struct AppCopy {
 
     var a11yDocumented: String { t("a11yDocumented") }
     var a11yInterpolated: String { t("a11yInterpolated") }
-    var about: String { t("about") }
     var brightnessLevel: String { t("brightnessLevel") }
     var centimetersUnit: String { t("centimetersUnit") }
     var complete: String { t("complete") }
@@ -187,6 +189,7 @@ struct AppCopy {
     var deletePreset: String { t("deletePreset") }
     var done: String { t("done") }
     var emptyPresetSlot: String { t("emptyPresetSlot") }
+    var finishedRunNotice: String { t("finishedRunNotice") }
     var haptics: String { t("haptics") }
     var heightLabel: String { t("heightLabel") }
     var inchesUnit: String { t("inchesUnit") }
@@ -196,7 +199,6 @@ struct AppCopy {
     var legendInterpolated: String { t("legendInterpolated") }
     var litersLabel: String { t("litersLabel") }
     var litersUnit: String { t("litersUnit") }
-    var loadPreset: String { t("loadPreset") }
     var longPressAddStripHint: String { t("longPressAddStripHint") }
     var millilitersLabel: String { t("millilitersLabel") }
     var millilitersUnit: String { t("millilitersUnit") }
@@ -204,8 +206,6 @@ struct AppCopy {
     var minutesUnit: String { t("minutesUnit") }
     var noPresetSaved: String { t("noPresetSaved") }
     var notificationRunCompleteBody: String { t("notificationRunCompleteBody") }
-    var off: String { t("off") }
-    var on: String { t("on") }
     var overwritePreset: String { t("overwritePreset") }
     var paper: String { t("paper") }
     var pause: String { t("pause") }
@@ -247,7 +247,9 @@ struct AppCopy {
     var processTransferToWash: String { t("processTransferToWash") }
     var ready: String { t("ready") }
     var reset: String { t("reset") }
-    var russianLanguageBlockedMessage: String { t("russianLanguageBlockedMessage") }
+    var russianLanguageBlockedMessage: String { AppInfo.russianBlockedMessage }
+    var privacyPolicy: String { t("privacyPolicy") }
+    var support: String { t("support") }
     var safelightWarning: String { t("safelightWarning") }
     var resetProject: String { t("resetProject") }
     var resetSetup: String { t("resetSetup") }
@@ -290,12 +292,10 @@ struct AppCopy {
     var temperatureLabel: String { t("temperatureLabel") }
     var temperatureUnit: String { t("temperatureUnit") }
     var testStrip: String { t("testStrip") }
-    var toner: String { t("toner") }
     var unitSystem: String { t("unitSystem") }
     var unitSystemImperial: String { t("unitSystemImperial") }
     var unitSystemMetric: String { t("unitSystemMetric") }
     var version: String { t("version") }
-    var volumeLabel: String { t("volumeLabel") }
     var widthLabel: String { t("widthLabel") }
 
     var copyright: String { tfPlain("copyright", Self.copyrightYear) }

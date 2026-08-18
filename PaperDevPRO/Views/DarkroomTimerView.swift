@@ -9,6 +9,104 @@ public enum DarkroomPalette {
     public static let red = Color(red: 1, green: 0, blue: 0)
 }
 
+/// Point sizes that follow Dynamic Type, capped so the darkroom layout does not explode.
+private struct DarkroomFontModifier: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    let size: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+    let textStyle: Font.TextStyle
+
+    func body(content: Content) -> some View {
+        content.font(scaledFont)
+    }
+
+    private var scaledFont: Font {
+        #if canImport(UIKit)
+        let metrics = UIFontMetrics(forTextStyle: textStyle.uiTextStyle)
+        let base: UIFont
+        if design == .monospaced {
+            base = UIFont.monospacedDigitSystemFont(ofSize: size, weight: weight.uiWeight)
+        } else {
+            base = UIFont.systemFont(ofSize: size, weight: weight.uiWeight)
+        }
+        return Font(metrics.scaledFont(for: base, maximumPointSize: size * 1.6))
+        #else
+        return .system(size: size, weight: weight, design: design)
+        #endif
+    }
+}
+
+private struct DarkroomFrameModifier: ViewModifier {
+    @ScaledMetric var width: CGFloat
+    @ScaledMetric var height: CGFloat
+
+    init(width: CGFloat, height: CGFloat) {
+        _width = ScaledMetric(wrappedValue: width, relativeTo: .body)
+        _height = ScaledMetric(wrappedValue: height, relativeTo: .body)
+    }
+
+    func body(content: Content) -> some View {
+        content.frame(width: width, height: height)
+    }
+}
+
+extension View {
+    func darkroomFont(
+        _ size: CGFloat,
+        weight: Font.Weight = .regular,
+        design: Font.Design = .default,
+        relativeTo textStyle: Font.TextStyle = .body
+    ) -> some View {
+        modifier(
+            DarkroomFontModifier(size: size, weight: weight, design: design, textStyle: textStyle)
+        )
+    }
+
+    func darkroomFrame(width: CGFloat, height: CGFloat) -> some View {
+        modifier(DarkroomFrameModifier(width: width, height: height))
+    }
+}
+
+#if canImport(UIKit)
+private extension Font.TextStyle {
+    var uiTextStyle: UIFont.TextStyle {
+        switch self {
+        case .largeTitle: return .largeTitle
+        case .title: return .title1
+        case .title2: return .title2
+        case .title3: return .title3
+        case .headline: return .headline
+        case .subheadline: return .subheadline
+        case .body: return .body
+        case .callout: return .callout
+        case .footnote: return .footnote
+        case .caption: return .caption1
+        case .caption2: return .caption2
+        @unknown default: return .body
+        }
+    }
+}
+
+private extension Font.Weight {
+    var uiWeight: UIFont.Weight {
+        switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        default: return .regular
+        }
+    }
+}
+#endif
+
 public enum SetupRoute: Hashable {
     case setup
     case settings
@@ -59,6 +157,7 @@ public struct DarkroomTimerView: View {
         case .setup:
             SetupView(
                 initialSession: viewModel.session,
+                isEditingFinishedRun: viewModel.state == .finished,
                 onResetProject: {
                     viewModel.resetProject()
                 },
@@ -90,7 +189,7 @@ public struct DarkroomTimerView: View {
                         Spacer(minLength: 0)
 
                         Text(viewModel.formattedRemainingTime)
-                            .font(.system(size: timerFontSize(for: geometry.size), weight: .bold, design: .monospaced))
+                            .darkroomFont(timerFontSize(for: geometry.size), weight: .bold, design: .monospaced, relativeTo: .largeTitle)
                             .minimumScaleFactor(0.35)
                             .lineLimit(1)
                             .accessibilityLabel(accessibilityTimerLabel)
@@ -106,11 +205,11 @@ public struct DarkroomTimerView: View {
 
                         VStack(spacing: 12) {
                             Text(AppInfo.displayName)
-                                .font(.system(size: 34, weight: .bold))
+                                .darkroomFont(34, weight: .bold)
                                 .foregroundStyle(DarkroomPalette.red)
 
                             Text(copy.safelightWarning)
-                                .font(.system(size: 15, weight: .semibold))
+                                .darkroomFont(15, weight: .semibold)
                                 .foregroundStyle(DarkroomPalette.red.opacity(0.85))
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -159,9 +258,9 @@ public struct DarkroomTimerView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 Text("+")
-                    .font(.system(size: 32, weight: .bold))
+                    .darkroomFont(32, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
-                    .frame(width: 58, height: 58)
+                    .darkroomFrame(width: 58, height: 58)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(DarkroomPalette.red, lineWidth: 2)
@@ -191,7 +290,7 @@ public struct DarkroomTimerView: View {
             }
             .padding(.horizontal, 2)
         }
-        .frame(height: 70)
+        .frame(minHeight: 70)
     }
 
     private var controlsHintView: some View {
@@ -207,7 +306,7 @@ public struct DarkroomTimerView: View {
 
     private func hintLine(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 22, weight: .semibold))
+            .darkroomFont(22, weight: .semibold)
             .foregroundStyle(DarkroomPalette.red)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -220,15 +319,16 @@ public struct DarkroomTimerView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 17, weight: .bold))
+                .darkroomFont(17, weight: .bold)
 
             Text(runStatusText(for: run))
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .darkroomFont(14, weight: .bold, design: .monospaced)
                 .lineLimit(1)
         }
         .foregroundStyle(DarkroomPalette.red)
         .padding(.horizontal, 12)
-        .frame(width: 132, height: 58, alignment: .leading)
+        .padding(.vertical, 8)
+            .frame(minWidth: 132, minHeight: 58, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(DarkroomPalette.red, lineWidth: isSelected ? 3 : 1)
@@ -245,10 +345,10 @@ public struct DarkroomTimerView: View {
 
             VStack(spacing: 20) {
                 Text(copy.confirmDeleteRunTitle)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
 
                 Text(copy.confirmDeleteRunMessage)
-                    .font(.system(size: 15, weight: .semibold))
+                    .darkroomFont(15, weight: .semibold)
                     .multilineTextAlignment(.center)
                     .opacity(0.8)
 
@@ -262,7 +362,7 @@ public struct DarkroomTimerView: View {
                         }
                     } label: {
                         Text(copy.confirmYes)
-                            .font(.system(size: 17, weight: .bold))
+                            .darkroomFont(17, weight: .bold)
                             .foregroundStyle(DarkroomPalette.red)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -278,7 +378,7 @@ public struct DarkroomTimerView: View {
                         withAnimation(.easeInOut(duration: 0.15)) { pendingDeleteRunID = nil }
                     } label: {
                         Text(copy.confirmNo)
-                            .font(.system(size: 17, weight: .bold))
+                            .darkroomFont(17, weight: .bold)
                             .foregroundStyle(DarkroomPalette.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -328,17 +428,18 @@ public struct DarkroomTimerView: View {
 
         return VStack(alignment: .leading, spacing: 8) {
             Text("\(index + 1). \(copy.phaseTitle(timedPhase.phase))")
-                .font(.system(size: 18, weight: .bold))
+                .darkroomFont(18, weight: .bold)
                 .lineLimit(1)
 
             Text(durationText(for: timedPhase.duration))
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .darkroomFont(20, weight: .bold, design: .monospaced)
                 .lineLimit(1)
         }
         .foregroundStyle(DarkroomPalette.red)
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .frame(width: 174, height: 76, alignment: .leading)
+        .padding(.vertical, 8)
+            .frame(minWidth: 174, minHeight: 76, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(DarkroomPalette.red, lineWidth: isCurrentPhase ? 3 : 1)
@@ -350,7 +451,7 @@ public struct DarkroomTimerView: View {
         VStack(spacing: 8) {
             if let phase = viewModel.currentPhase {
                 Text(copy.phaseTitle(phase.phase).uppercased())
-                    .font(.system(size: 34, weight: .bold))
+                    .darkroomFont(34, weight: .bold)
             }
         }
         .accessibilityElement(children: .combine)
@@ -361,16 +462,16 @@ public struct DarkroomTimerView: View {
         switch viewModel.state {
         case .idle:
             Text(copy.ready)
-                .font(.system(size: 30, weight: .bold))
+                .darkroomFont(30, weight: .bold)
         case .running:
             Text(copy.running)
-                .font(.system(size: 30, weight: .bold))
+                .darkroomFont(30, weight: .bold)
         case .paused:
             Text(copy.paused)
-                .font(.system(size: 30, weight: .bold))
+                .darkroomFont(30, weight: .bold)
         case .finished:
             Text(copy.complete)
-                .font(.system(size: 30, weight: .bold))
+                .darkroomFont(30, weight: .bold)
         }
     }
 
@@ -401,9 +502,9 @@ public struct DarkroomTimerView: View {
 
     private func controlButtonLabel(_ title: String, isDisabled: Bool = false) -> some View {
         Text(title)
-            .font(.system(size: 24, weight: .bold))
+            .darkroomFont(24, weight: .bold)
             .foregroundStyle(DarkroomPalette.red.opacity(isDisabled ? 0.35 : 1))
-            .frame(width: 124, height: 124)
+            .darkroomFrame(width: 124, height: 124)
             .overlay(
                 Circle()
                     .stroke(DarkroomPalette.red.opacity(isDisabled ? 0.35 : 1), lineWidth: 3)

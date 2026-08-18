@@ -13,6 +13,24 @@ final class DarkroomModelTests: XCTestCase {
         )
     }
 
+    func testInchCutsKeepTheManualUnitAndDoNotCollideWithMetricCuts() {
+        let eightByTen = PaperSize.inches(width: 8, height: 10)
+        let thirteenByEighteen = PaperSize(widthCentimeters: 13, heightCentimeters: 18)
+
+        XCTAssertEqual(eightByTen.nativeUnit, .inches)
+        XCTAssertTrue(eightByTen.displayName.hasSuffix("in"))
+        XCTAssertTrue(eightByTen.displayName.contains("8"))
+        XCTAssertTrue(eightByTen.displayName.contains("10"))
+        XCTAssertTrue(thirteenByEighteen.displayName.hasSuffix("cm"))
+        XCTAssertNotEqual(eightByTen.id, thirteenByEighteen.id)
+
+        let fiveBySeven = PaperSize.inches(width: 5, height: 7)
+        XCTAssertNotEqual(
+            fiveBySeven.id,
+            PaperSize(widthCentimeters: 13, heightCentimeters: 18).id
+        )
+    }
+
     func testWashDurationFallsBackToLongestRuleBelowTheColdestRule() {
         let paper = Paper(
             id: "test",
@@ -23,8 +41,7 @@ final class DarkroomModelTests: XCTestCase {
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 600),
                 WashRule(minimumTemperatureCelsius: 20, duration: 300)
-            ],
-            developerTemperatureCurve: []
+            ]
         )
 
         XCTAssertEqual(paper.washDuration(for: 20), 600)

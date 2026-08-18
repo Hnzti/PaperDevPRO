@@ -1,14 +1,6 @@
 import Combine
 import Foundation
 
-#if canImport(AudioToolbox)
-import AudioToolbox
-#endif
-
-#if canImport(UIKit)
-import UIKit
-#endif
-
 @MainActor
 public final class TimerViewModel: ObservableObject {
     public enum TimerState: Equatable {
@@ -79,11 +71,6 @@ public final class TimerViewModel: ObservableObject {
         runs.contains { $0.state == .running }
     }
 
-    public var progress: Double {
-        guard let currentPhase, currentPhase.duration > 0 else { return 0 }
-        return 1 - (remainingTime / currentPhase.duration)
-    }
-
     public var formattedRemainingTime: String {
         guard hasRuns else { return "--:--" }
         return formatTime(remainingTime)
@@ -133,14 +120,33 @@ public final class TimerViewModel: ObservableObject {
 
         mutateSelectedRun { run in
             let runSession = run.isTestStrip ? session.testStripRunSession() : session
+            let previousSession = run.session
+            let wasFinished = run.state == .finished
+
             run.session = runSession
             run.phases = runSession.resolvedPhases()
-            run.currentPhaseIndex = 0
-            run.remainingTime = run.phases[0].duration
-            run.state = .idle
             run.lastTickDate = nil
             run.lastWarningSecond = nil
-            run.usageWasRecorded = false
+
+            // A finished sheet stays finished – it already went through the baths.
+            // Editing its setup corrects the record (e.g. the size was wrong) instead
+            // of counting the chemistry a second time.
+            if wasFinished {
+                run.currentPhaseIndex = max(0, run.phases.count - 1)
+                run.remainingTime = 0
+
+                if run.usageWasRecorded {
+                    ChemicalUsageStore.shared.reviseCompletedCycle(
+                        from: previousSession,
+                        to: runSession
+                    )
+                }
+            } else {
+                run.currentPhaseIndex = 0
+                run.remainingTime = run.phases[0].duration
+                run.state = .idle
+                run.usageWasRecorded = false
+            }
         }
 
         refreshTimerLoop()
@@ -194,6 +200,7 @@ public final class TimerViewModel: ObservableObject {
         guard hasRuns, state != .finished else { return }
 
         RunCompletionNotifier.shared.prepareAuthorization()
+        DarkroomFeedback.shared.prepare()
 
         mutateSelectedRun { run in
             switch run.state {
@@ -206,18 +213,6 @@ public final class TimerViewModel: ObservableObject {
             case .finished:
                 break
             }
-        }
-
-        refreshTimerLoop()
-    }
-
-    public func start() {
-        guard hasRuns else { return }
-
-        mutateSelectedRun { run in
-            guard run.state == .idle || run.state == .paused else { return }
-            run.state = .running
-            run.lastTickDate = Date()
         }
 
         refreshTimerLoop()
@@ -238,12 +233,6 @@ public final class TimerViewModel: ObservableObject {
             reset(run: &run)
         }
 
-        refreshTimerLoop()
-    }
-
-    public func skipToNextPhase() {
-        guard let index = runs.firstIndex(where: { $0.id == selectedRunID }) else { return }
-        advanceToNextPhase(for: index, at: Date())
         refreshTimerLoop()
     }
 
@@ -473,51 +462,24 @@ public final class TimerViewModel: ObservableObject {
     }
 
     private func triggerWarningFeedback() {
-        let settings = DarkroomSettingsStore.shared
-
-        #if canImport(AudioToolbox)
-        if settings.isSoundEnabled {
-            AudioServicesPlaySystemSound(1057)
-        }
-        #endif
-
-        #if canImport(UIKit)
-        if settings.isHapticsEnabled {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        }
-        #endif
+        playFeedback(.warning)
     }
 
     private func triggerPhaseChangeFeedback() {
-        let settings = DarkroomSettingsStore.shared
-
-        #if canImport(AudioToolbox)
-        if settings.isSoundEnabled {
-            AudioServicesPlaySystemSound(1113)
-        }
-        #endif
-
-        #if canImport(UIKit)
-        if settings.isHapticsEnabled {
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-        }
-        #endif
+        playFeedback(.phaseChange)
     }
 
     private func triggerCompletionFeedback() {
+        playFeedback(.completion)
+    }
+
+    private func playFeedback(_ cue: DarkroomFeedback.Cue) {
         let settings = DarkroomSettingsStore.shared
-
-        #if canImport(AudioToolbox)
-        if settings.isSoundEnabled {
-            AudioServicesPlaySystemSound(1025)
-        }
-        #endif
-
-        #if canImport(UIKit)
-        if settings.isHapticsEnabled {
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-        }
-        #endif
+        DarkroomFeedback.shared.play(
+            cue,
+            sound: settings.isSoundEnabled,
+            haptics: settings.isHapticsEnabled
+        )
     }
 
     private func applyKeepScreenOn() {

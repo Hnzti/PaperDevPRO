@@ -14,7 +14,6 @@ public struct Paper: Identifiable, Codable, Hashable, Sendable {
     public let type: PaperType
     public let availableSizes: [PaperSize]
     public let washRules: [WashRule]
-    public let developerTemperatureCurve: [TemperatureTimeFactor]
 
     public var displayName: String {
         "\(manufacturer) \(name)"
@@ -26,8 +25,7 @@ public struct Paper: Identifiable, Codable, Hashable, Sendable {
         name: String,
         type: PaperType,
         availableSizes: [PaperSize],
-        washRules: [WashRule],
-        developerTemperatureCurve: [TemperatureTimeFactor]
+        washRules: [WashRule]
     ) {
         self.id = id
         self.manufacturer = manufacturer
@@ -35,7 +33,10 @@ public struct Paper: Identifiable, Codable, Hashable, Sendable {
         self.type = type
         self.availableSizes = availableSizes
         self.washRules = washRules
-        self.developerTemperatureCurve = developerTemperatureCurve
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, manufacturer, name, type, availableSizes, washRules
     }
 
     public func washDuration(for waterTemperatureCelsius: Double) -> TimeInterval {
@@ -48,66 +49,87 @@ public struct Paper: Identifiable, Codable, Hashable, Sendable {
         return washRules.map(\.duration).max() ?? 0
     }
 
-    public func developerTemperatureFactor(for temperatureCelsius: Double) -> Double {
-        let sortedCurve = developerTemperatureCurve.sorted { $0.temperatureCelsius < $1.temperatureCelsius }
-        guard let first = sortedCurve.first else { return 1 }
+}
 
-        if temperatureCelsius <= first.temperatureCelsius {
-            let temperatureDelta = first.temperatureCelsius - temperatureCelsius
-            return first.factor * pow(1.08, temperatureDelta)
+public enum LengthUnit: String, Codable, Hashable, Sendable {
+    case centimeters
+    case inches
+
+    public var symbol: String {
+        switch self {
+        case .centimeters: return "cm"
+        case .inches: return "in"
         }
-
-        guard let upper = sortedCurve.first(where: { $0.temperatureCelsius >= temperatureCelsius }) else {
-            return sortedCurve.last?.factor ?? 1
-        }
-
-        guard let lower = sortedCurve.last(where: { $0.temperatureCelsius <= temperatureCelsius }),
-              lower.temperatureCelsius != upper.temperatureCelsius else {
-            return upper.factor
-        }
-
-        let progress = (temperatureCelsius - lower.temperatureCelsius) / (upper.temperatureCelsius - lower.temperatureCelsius)
-        return lower.factor + ((upper.factor - lower.factor) * progress)
     }
 }
 
 public struct PaperSize: Identifiable, Codable, Hashable, Sendable {
     public let widthCentimeters: Double
     public let heightCentimeters: Double
+    /// Unit the size is cut and sold in. ILFORD sells 8×10 in and 18×24 cm side by
+    /// side, so each size is shown the way its datasheet prints it; the conversion
+    /// is only added when the user works in the other unit.
+    public let nativeUnit: LengthUnit
 
-    /// Identity in tenths of a millimetre. Interpolating the raw `Double`s used to
-    /// produce ids like `7.619999999999999x25.4`, so two sizes that are the same
-    /// piece of paper (catalog value vs. value computed from inches) compared as
-    /// different and the picker lost its selection.
+    /// Identity in tenths of a millimetre. Formatting the raw `Double`s produced ids
+    /// like `7.619999999999999x25.4`, so the same piece of paper (catalog value vs.
+    /// value computed from inches) compared as different and the picker lost its
+    /// selection. The native unit is deliberately not part of the identity.
     public var id: String {
-        "\(tenthsOfMillimeter(widthCentimeters))x\(tenthsOfMillimeter(heightCentimeters))"
+        "\(Self.tenthsOfMillimeter(widthCentimeters))x\(Self.tenthsOfMillimeter(heightCentimeters))"
     }
 
+    /// Size as printed in the manufacturer's datasheet.
     public var displayName: String {
-        "\(formatted(widthCentimeters)) x \(formatted(heightCentimeters)) cm"
-    }
-
-    /// Same size expressed in inches, for the imperial unit setting.
-    public var displayNameInches: String {
-        let width = (widthCentimeters / 2.54).formatted(.number.precision(.fractionLength(0...1)))
-        let height = (heightCentimeters / 2.54).formatted(.number.precision(.fractionLength(0...1)))
-        return "\(width) x \(height) in"
+        displayName(in: nativeUnit)
     }
 
     public var areaSquareMeters: Double {
         (widthCentimeters / 100) * (heightCentimeters / 100)
     }
 
-    public init(widthCentimeters: Double, heightCentimeters: Double) {
+    public init(
+        widthCentimeters: Double,
+        heightCentimeters: Double,
+        nativeUnit: LengthUnit = .centimeters
+    ) {
         self.widthCentimeters = widthCentimeters
         self.heightCentimeters = heightCentimeters
+        self.nativeUnit = nativeUnit
     }
 
-    private func formatted(_ value: Double) -> String {
+    /// Size given in inches by the datasheet (4×5, 8×10, 16×20 …).
+    public static func inches(width: Double, height: Double) -> PaperSize {
+        PaperSize(
+            widthCentimeters: width * 2.54,
+            heightCentimeters: height * 2.54,
+            nativeUnit: .inches
+        )
+    }
+
+    public func displayName(in unit: LengthUnit) -> String {
+        let divisor = unit == .inches ? 2.54 : 1
+        let width = Self.formatted(widthCentimeters / divisor)
+        let height = Self.formatted(heightCentimeters / divisor)
+        return "\(width) x \(height) \(unit.symbol)"
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case widthCentimeters, heightCentimeters, nativeUnit
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        widthCentimeters = try container.decode(Double.self, forKey: .widthCentimeters)
+        heightCentimeters = try container.decode(Double.self, forKey: .heightCentimeters)
+        nativeUnit = try container.decodeIfPresent(LengthUnit.self, forKey: .nativeUnit) ?? .centimeters
+    }
+
+    private static func formatted(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)))
     }
 
-    private func tenthsOfMillimeter(_ centimeters: Double) -> Int {
+    private static func tenthsOfMillimeter(_ centimeters: Double) -> Int {
         Int((centimeters * 100).rounded())
     }
 }
@@ -140,16 +162,6 @@ public struct WashRule: Codable, Hashable, Sendable {
     }
 }
 
-public struct TemperatureTimeFactor: Codable, Hashable, Sendable {
-    public let temperatureCelsius: Double
-    public let factor: Double
-
-    public init(temperatureCelsius: Double, factor: Double) {
-        self.temperatureCelsius = temperatureCelsius
-        self.factor = factor
-    }
-}
-
 public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case developer
     case transferToStopBath
@@ -173,11 +185,14 @@ public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable,
     }
 }
 
-public enum ChemicalRole: String, Codable, Hashable, Sendable {
+public enum ChemicalRole: String, Codable, Hashable, CaseIterable, Sendable {
     case developer
     case stopBath
     case fixer
     case toner
+
+    /// Roles a session cannot be built without.
+    public static let required: [ChemicalRole] = [.developer, .stopBath, .fixer]
 
     public var phase: ProcessPhase {
         switch self {

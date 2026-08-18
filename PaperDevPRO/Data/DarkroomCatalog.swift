@@ -1,10 +1,16 @@
 import Foundation
 
 /// Read-only catalog of everything the app knows about papers and chemistry.
-/// Data lives in `PaperCatalog` / `ChemicalCatalog`; this type only queries it.
+///
+/// Runtime data comes from `DarkroomCatalog.json` (bundle, or a newer file in
+/// Application Support). The Swift catalogs stay as the typed authoring source
+/// and as a fallback if the JSON is missing during development.
 public enum DarkroomCatalog {
-    public static let papers: [Paper] = PaperCatalog.all
-    public static let chemicals: [Chemical] = ChemicalCatalog.all
+    private static let file: DarkroomCatalogFile = DarkroomCatalogLoader.load()
+
+    public static var papers: [Paper] { file.papers }
+    public static var chemicals: [Chemical] { file.chemicals }
+    public static var revision: String { file.revision }
 
     public static var manufacturers: [String] {
         Array(

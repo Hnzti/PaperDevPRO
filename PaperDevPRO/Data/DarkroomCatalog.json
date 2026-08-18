@@ -1,0 +1,2510 @@
+{
+  "chemicals" : [
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3
+            }
+          ],
+          "ratio" : "1+7",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 130,
+                "minimum" : 100
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 25,
+              "timeRange" : {
+                "maximum" : 100,
+                "minimum" : 70
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 30,
+              "timeRange" : {
+                "maximum" : 70,
+                "minimum" : 50
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 35,
+              "timeRange" : {
+                "maximum" : 45,
+                "minimum" : 30
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 25,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 40
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 30,
+              "timeRange" : {
+                "maximum" : 40,
+                "minimum" : 25
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 35,
+              "timeRange" : {
+                "maximum" : 25,
+                "minimum" : 15
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-n-chamois",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 100,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 18,
+              "timeRange" : {
+                "maximum" : 78,
+                "minimum" : 52
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 40
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 22,
+              "timeRange" : {
+                "maximum" : 48,
+                "minimum" : 32
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 24,
+              "timeRange" : {
+                "maximum" : 36,
+                "minimum" : 24
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomatol-lqn",
+      "manufacturer" : "Foma",
+      "name" : "Fomatol LQN",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 3.75
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 7.5
+            }
+          ],
+          "ratio" : "stock",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 130,
+                "minimum" : 100
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomatol-p",
+      "manufacturer" : "Foma",
+      "name" : "Fomatol P",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.5
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 5
+            }
+          ],
+          "ratio" : "1+2",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 130,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 130,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.5
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 5
+            }
+          ],
+          "ratio" : "1+3",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 18,
+              "timeRange" : {
+                "maximum" : 104,
+                "minimum" : 65
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 80,
+                "minimum" : 50
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 22,
+              "timeRange" : {
+                "maximum" : 64,
+                "minimum" : 40
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 24,
+              "timeRange" : {
+                "maximum" : 48,
+                "minimum" : 30
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-gd-l",
+      "manufacturer" : "Foma",
+      "name" : "GD-L",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3
+            }
+          ],
+          "ratio" : "stock",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 130,
+                "minimum" : 100
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-univerzalni-vyvojka",
+      "manufacturer" : "Foma",
+      "name" : "Univerzální vývojka",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            }
+          ],
+          "ratio" : "1+0",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 180
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomabrom-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 180
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomaspeed-variant",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            }
+          ],
+          "ratio" : "1+1",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 360,
+                "minimum" : 240
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 420,
+                "minimum" : 300
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            }
+          ],
+          "ratio" : "1+3",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 720,
+                "minimum" : 480
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-retrobrom-sp",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 840,
+                "minimum" : 540
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomatol-pw",
+      "manufacturer" : "Foma",
+      "name" : "Fomatol PW",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+
+          ],
+          "ratio" : "1+19",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 20,
+                "minimum" : 10
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 30,
+                "minimum" : 20
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomatone-mg-classic",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 20,
+                "minimum" : 10
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "foma-fomapastel-mg",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 10,
+                "minimum" : 7
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomacitro",
+      "manufacturer" : "Foma",
+      "name" : "Fomacitro",
+      "role" : "stopBath"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            }
+          ],
+          "ratio" : "1+5",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 90
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            }
+          ],
+          "ratio" : "1+4",
+          "timeRules" : [
+            {
+              "isEstimated" : true,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            },
+            {
+              "isEstimated" : true,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 90
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomafix",
+      "manufacturer" : "Foma",
+      "name" : "Fomafix",
+      "role" : "fixer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3
+            }
+          ],
+          "ratio" : "working solution",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 300,
+                "minimum" : 300
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "foma-fomafix-p",
+      "manufacturer" : "Foma",
+      "name" : "Fomafix P",
+      "role" : "fixer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1
+            },
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 1
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+
+          ]
+        }
+      ],
+      "id" : "foma-fomatoner-sepia",
+      "manufacturer" : "Foma",
+      "name" : "Fomatoner Sepia",
+      "role" : "toner"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 5.2
+            },
+            {
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 2.6
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.6
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-harman-direct-positive-fb",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3.6
+            },
+            {
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 1.8
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.1
+            }
+          ],
+          "ratio" : "1+14",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 300,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-harman-direct-positive-fb",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 300,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-multigrade",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3.6
+            },
+            {
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 1.8
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.3
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-harman-direct-positive-fb",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 240
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-pq-universal",
+      "manufacturer" : "Ilford",
+      "name" : "PQ UNIVERSAL",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3.6
+            },
+            {
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 1.8
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.3
+            }
+          ],
+          "ratio" : "1+3",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-multigrade-rc-cooltone",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 240
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-bromophen",
+      "manufacturer" : "Ilford",
+      "name" : "BROMOPHEN",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.6
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperID" : "ilford-multigrade-fb-warmtone",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 90
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-harman-warmtone",
+      "manufacturer" : "Ilford",
+      "name" : "HARMAN WARMTONE",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3.1
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.5
+            }
+          ],
+          "ratio" : "1+19",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 10,
+                "minimum" : 10
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 10,
+                "minimum" : 10
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-ilfostop",
+      "manufacturer" : "Ilford",
+      "name" : "ILFOSTOP",
+      "role" : "stopBath"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4.6
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.3
+            }
+          ],
+          "ratio" : "1+19",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 10,
+                "minimum" : 10
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 10,
+                "minimum" : 10
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-ilfostop-pro",
+      "manufacturer" : "Ilford",
+      "name" : "ILFOSTOP PRO",
+      "role" : "stopBath"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            }
+          ],
+          "ratio" : "1+4",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 30,
+                "minimum" : 30
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 60
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-rapid-fixer",
+      "manufacturer" : "Ilford",
+      "name" : "Rapid Fixer",
+      "role" : "fixer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            }
+          ],
+          "ratio" : "1+4",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 30,
+                "minimum" : 30
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 60
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 60,
+                "minimum" : 60
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-hypam",
+      "manufacturer" : "Ilford",
+      "name" : "Hypam",
+      "role" : "fixer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2
+            }
+          ],
+          "ratio" : "stock",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-ilfofix-ii",
+      "manufacturer" : "Ilford",
+      "name" : "ILFOFIX II",
+      "role" : "fixer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 6.4
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 4.5
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "kentmere-paper-developer",
+      "manufacturer" : "Kentmere",
+      "name" : "Paper Developer",
+      "role" : "developer"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 7.7
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 7.7
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 20,
+                "minimum" : 20
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 30,
+                "minimum" : 30
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "kentmere-stop-bath",
+      "manufacturer" : "Kentmere",
+      "name" : "Stop Bath",
+      "role" : "stopBath"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 3.5
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.8
+            }
+          ],
+          "ratio" : "1+9",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 120,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 300,
+                "minimum" : 300
+              }
+            }
+          ]
+        },
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
+              "squareMetersPerLiter" : 4.5
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 2.1
+            }
+          ],
+          "ratio" : "1+4",
+          "timeRules" : [
+            {
+              "isEstimated" : true,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 90,
+                "minimum" : 90
+              }
+            },
+            {
+              "isEstimated" : true,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 180,
+                "minimum" : 180
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "kentmere-fixer",
+      "manufacturer" : "Kentmere",
+      "name" : "Fixer",
+      "role" : "fixer"
+    }
+  ],
+  "papers" : [
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomabrom-variant",
+      "manufacturer" : "Foma",
+      "name" : "Fomabrom Variant",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 2100,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomaspeed-variant",
+      "manufacturer" : "Foma",
+      "name" : "Fomaspeed Variant",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 240,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomaspeed",
+      "manufacturer" : "Foma",
+      "name" : "Fomaspeed",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 240,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomabrom",
+      "manufacturer" : "Foma",
+      "name" : "Fomabrom",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 1800,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomabrom-n-chamois",
+      "manufacturer" : "Foma",
+      "name" : "Fomabrom N chamois",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 1800,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 13,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 9
+        },
+        {
+          "heightCentimeters" : 15,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 10
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-fomatone-mg-classic",
+      "manufacturer" : "Foma",
+      "name" : "Fomatone MG Classic",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 1800,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 40,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 30
+        },
+        {
+          "heightCentimeters" : 50,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 40
+        },
+        {
+          "heightCentimeters" : 60,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 50
+        }
+      ],
+      "id" : "foma-retrobrom-sp",
+      "manufacturer" : "Foma",
+      "name" : "Retrobrom Sp",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 1800,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 60.96,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 50.8
+        }
+      ],
+      "id" : "foma-fomapastel-mg",
+      "manufacturer" : "Foma",
+      "name" : "Fomapastel MG",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "maximumTemperatureCelsius" : 12
+        },
+        {
+          "duration" : 2100,
+          "minimumTemperatureCelsius" : 12
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-harman-direct-positive-fb",
+      "manufacturer" : "Ilford",
+      "name" : "HARMAN Direct Positive FB",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 3600,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-rc-deluxe",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE RC Deluxe",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-rc-portfolio",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE RC Portfolio",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-rc-warmtone",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE RC Warmtone",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-rc-cooltone",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE RC Cooltone",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-fb-classic",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE FB Classic",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-fb-cooltone",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE FB Cooltone",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 3600,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-fb-warmtone",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE FB Warmtone",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 3600,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "ilford-multigrade-art-300",
+      "manufacturer" : "Ilford",
+      "name" : "MULTIGRADE ART 300",
+      "type" : "FB",
+      "washRules" : [
+        {
+          "duration" : 2700,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    },
+    {
+      "availableSizes" : [
+        {
+          "heightCentimeters" : 12.7,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 10.16
+        },
+        {
+          "heightCentimeters" : 17.78,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 12.7
+        },
+        {
+          "heightCentimeters" : 18,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 13
+        },
+        {
+          "heightCentimeters" : 24,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 18
+        },
+        {
+          "heightCentimeters" : 25.4,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 20.32
+        },
+        {
+          "heightCentimeters" : 30,
+          "nativeUnit" : "centimeters",
+          "widthCentimeters" : 24
+        },
+        {
+          "heightCentimeters" : 35.56,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 27.94
+        },
+        {
+          "heightCentimeters" : 40.64,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 30.48
+        },
+        {
+          "heightCentimeters" : 50.8,
+          "nativeUnit" : "inches",
+          "widthCentimeters" : 40.64
+        }
+      ],
+      "id" : "kentmere-vc-select",
+      "manufacturer" : "Kentmere",
+      "name" : "VC Select",
+      "type" : "RC",
+      "washRules" : [
+        {
+          "duration" : 120,
+          "minimumTemperatureCelsius" : 5
+        }
+      ]
+    }
+  ],
+  "revision" : "2026-08-18",
+  "schemaVersion" : 1
+}

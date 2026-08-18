@@ -264,12 +264,20 @@ final class DarkroomSettingsStore: ObservableObject {
         }
     }
 
+    /// Datasheet value first, and a single conversion only when the user works in the
+    /// other unit – so an 8×10 in sheet never shows up as "20.3 x 25.4 cm" alone.
     func formatSize(_ size: PaperSize) -> String {
-        switch unitSystem {
-        case .metric:
+        guard size.nativeUnit != preferredLengthUnit else {
             return size.displayName
-        case .imperial:
-            return size.displayNameInches
+        }
+
+        return "\(size.displayName) (\(size.displayName(in: preferredLengthUnit)))"
+    }
+
+    var preferredLengthUnit: LengthUnit {
+        switch unitSystem {
+        case .metric: return .centimeters
+        case .imperial: return .inches
         }
     }
 

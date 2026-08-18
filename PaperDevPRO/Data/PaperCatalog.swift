@@ -1,18 +1,18 @@
 import Foundation
 
-/// Sheet sizes shared by the whole ILFORD / Kentmere catalog (both metric and
-/// inch cuts are sold, so both stay in the list).
+/// Sheet sizes shared by the whole ILFORD / Kentmere catalog. Both cuts are sold and
+/// each is listed in the unit its datasheet uses – inch cuts as inches, metric as cm.
 enum CatalogSheetSizes {
     static let harmanSheets: [PaperSize] = [
-        PaperSize(widthCentimeters: 10.2, heightCentimeters: 12.7),
-        PaperSize(widthCentimeters: 12.7, heightCentimeters: 17.8),
+        PaperSize.inches(width: 4, height: 5),
+        PaperSize.inches(width: 5, height: 7),
         PaperSize(widthCentimeters: 13, heightCentimeters: 18),
         PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-        PaperSize(widthCentimeters: 20.3, heightCentimeters: 25.4),
+        PaperSize.inches(width: 8, height: 10),
         PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-        PaperSize(widthCentimeters: 27.9, heightCentimeters: 35.6),
-        PaperSize(widthCentimeters: 30.5, heightCentimeters: 40.6),
-        PaperSize(widthCentimeters: 40.6, heightCentimeters: 50.8)
+        PaperSize.inches(width: 11, height: 14),
+        PaperSize.inches(width: 12, height: 16),
+        PaperSize.inches(width: 16, height: 20)
     ]
 }
 
@@ -39,12 +39,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 35 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1),
-                TemperatureTimeFactor(temperatureCelsius: 25, factor: 100.0 / 130.0),
-                TemperatureTimeFactor(temperatureCelsius: 30, factor: 70.0 / 130.0),
-                TemperatureTimeFactor(temperatureCelsius: 35, factor: 45.0 / 130.0)
             ]
         ),
         Paper(
@@ -65,12 +59,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 4 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1),
-                TemperatureTimeFactor(temperatureCelsius: 25, factor: 60.0 / 90.0),
-                TemperatureTimeFactor(temperatureCelsius: 30, factor: 40.0 / 90.0),
-                TemperatureTimeFactor(temperatureCelsius: 35, factor: 25.0 / 90.0)
             ]
         ),
         Paper(
@@ -91,9 +79,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 4 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -114,9 +99,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -137,9 +119,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -160,9 +139,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -181,9 +157,6 @@ enum PaperCatalog {
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -191,20 +164,15 @@ enum PaperCatalog {
             manufacturer: "Foma",
             name: "Fomapastel MG",
             type: .fiberBased,
+            // Foma lists this one in inch cuts, unlike the rest of its range.
             availableSizes: [
-                PaperSize(widthCentimeters: 20.3, heightCentimeters: 25.4),
-                PaperSize(widthCentimeters: 30.5, heightCentimeters: 40.6),
-                PaperSize(widthCentimeters: 50.8, heightCentimeters: 61)
+                PaperSize.inches(width: 8, height: 10),
+                PaperSize.inches(width: 12, height: 16),
+                PaperSize.inches(width: 20, height: 24)
             ],
             washRules: [
                 WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
                 WashRule(minimumTemperatureCelsius: 12, duration: 35 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 18, factor: 1.3),
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1.0),
-                TemperatureTimeFactor(temperatureCelsius: 22, factor: 0.8),
-                TemperatureTimeFactor(temperatureCelsius: 24, factor: 0.6)
             ]
         )
     ]
@@ -218,9 +186,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -231,9 +196,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -244,9 +206,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -257,9 +216,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -270,9 +226,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -283,9 +236,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -296,9 +246,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -309,9 +256,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         ),
         Paper(
@@ -322,9 +266,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         )
     ]
@@ -338,9 +279,6 @@ enum PaperCatalog {
             availableSizes: CatalogSheetSizes.harmanSheets,
             washRules: [
                 WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         )
     ]

@@ -43,7 +43,7 @@ final class LocalizationTests: XCTestCase {
 
     func testNoUserFacingStringStillReadsAsRawEnglishStatus() {
         // These used to sit in the Czech column verbatim.
-        let keys = ["ready", "running", "paused", "complete", "done", "reset", "setup", "pause", "resume"]
+        let keys = ["ready", "running", "paused", "complete", "done", "setup", "pause", "resume"]
 
         for key in keys {
             let czech = table[key]?["cs"] ?? ""
@@ -98,6 +98,33 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(
             AppLanguage.preferredFromSystem(preferredLanguages: ["ru-RU", "sk-SK"]),
             AppLanguage.isRussianTemporarilyBlocked ? .slovak : .russian
+        )
+    }
+
+    func testResetWordIsResetInEveryLanguage() {
+        for language in AppLanguage.allCases {
+            XCTAssertEqual(table["reset"]?[language.rawValue], "RESET")
+        }
+    }
+
+    func testSlovakAndSlovenianNamesAreDistinctCzechNames() {
+        XCTAssertEqual(AppLanguage.slovak.displayName, "Slovenština")
+        XCTAssertEqual(AppLanguage.slovenian.displayName, "Slovinština")
+        XCTAssertNotEqual(AppLanguage.slovak.displayName, AppLanguage.slovenian.displayName)
+    }
+
+    func testRussianBlockedMessageIsUntranslated() {
+        XCTAssertEqual(
+            AppCopy(language: .czech).russianLanguageBlockedMessage,
+            AppInfo.russianBlockedMessage
+        )
+        XCTAssertEqual(
+            AppCopy(language: .english).russianLanguageBlockedMessage,
+            AppInfo.russianBlockedMessage
+        )
+        XCTAssertEqual(
+            AppCopy(language: .ukrainian).russianLanguageBlockedMessage,
+            AppInfo.russianBlockedMessage
         )
     }
 

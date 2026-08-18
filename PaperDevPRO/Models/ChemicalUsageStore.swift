@@ -45,21 +45,57 @@ final class ChemicalUsageStore: ObservableObject {
     }
 
     func recordCompletedCycle(for session: DevelopmentSession) {
-        let entry = ChemicalUsageEntry(
+        for bath in Self.baths(of: session) {
+            append(Self.entry(for: session), chemical: bath.chemical, dilution: bath.dilution)
+        }
+
+        persist()
+    }
+
+    /// Corrects an already recorded cycle after its setup was edited (wrong size,
+    /// wrong chemistry). The sheet went through the baths exactly once, so the old
+    /// record is removed instead of adding a second one.
+    func reviseCompletedCycle(from old: DevelopmentSession, to new: DevelopmentSession) {
+        let oldEntry = Self.entry(for: old)
+
+        for bath in Self.baths(of: old) {
+            let usageKey = key(for: bath.chemical, dilution: bath.dilution)
+            if let index = usages[usageKey]?.lastIndex(of: oldEntry) {
+                usages[usageKey]?.remove(at: index)
+            }
+        }
+
+        for bath in Self.baths(of: new) {
+            append(Self.entry(for: new), chemical: bath.chemical, dilution: bath.dilution)
+        }
+
+        persist()
+    }
+
+    private static func entry(for session: DevelopmentSession) -> ChemicalUsageEntry {
+        ChemicalUsageEntry(
             paperType: session.paper.type,
             areaSquareMeters: session.paperSize.areaSquareMeters,
             paperID: session.paper.id
         )
+    }
 
-        append(entry, chemical: session.developer, dilution: session.developerDilution)
-        append(entry, chemical: session.stopBath, dilution: session.stopBathDilution)
-        append(entry, chemical: session.fixer, dilution: session.fixerDilution)
+    private static func baths(
+        of session: DevelopmentSession
+    ) -> [(chemical: Chemical, dilution: ChemicalDilution)] {
+        var baths = [
+            (session.developer, session.developerDilution),
+            (session.stopBath, session.stopBathDilution),
+            (session.fixer, session.fixerDilution)
+        ]
 
         if session.isToningEnabled,
            let toner = session.toner,
            let tonerDilution = session.tonerDilution {
-            append(entry, chemical: toner, dilution: tonerDilution)
+            baths.append((toner, tonerDilution))
         }
+
+        return baths
     }
 
     /// Registers the volume currently in the tray and rebalances the recorded usage.
@@ -94,10 +130,10 @@ final class ChemicalUsageStore: ObservableObject {
         volumeLiters[key(for: chemical, dilution: dilution)]
     }
 
+    /// Callers persist once per finished cycle instead of once per bath.
     private func append(_ entry: ChemicalUsageEntry, chemical: Chemical, dilution: ChemicalDilution) {
         let usageKey = key(for: chemical, dilution: dilution)
         usages[usageKey, default: []].append(entry)
-        persist()
     }
 
     private func key(for chemical: Chemical, dilution: ChemicalDilution) -> String {

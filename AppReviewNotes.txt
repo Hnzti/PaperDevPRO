@@ -1,19 +1,22 @@
-App Review Notes — PaperDeveloper (PaperDev)
+App Review Notes — PaperDev 2.0
 Copy into App Store Connect → App Review Information → Notes
 
 ---
 
+VERSION
+2.0 (build 3)
+
 WHAT THE APP DOES
-PaperDeveloper (PaperDev) is an offline darkroom timer for black-and-white photographic paper processing. Users select paper, chemistry, dilutions, temperatures and run timed develop / stop / fix / wash (optional toning) cycles. Multiple paper runs and test strips can run in parallel.
+PaperDev is an offline darkroom timer for black-and-white photographic paper processing. Users select paper, chemistry, dilutions, temperatures and run timed develop / stop / fix / wash (optional toning) cycles. Multiple paper runs and test strips can run in parallel.
 
 NO ACCOUNT / NO LOGIN
 There is no sign-in, no user account, and no cloud sync. All settings, presets and chemical usage data stay on device (UserDefaults).
 
 SAFELIGHT / RED UI
-The UI is intentionally red-on-black to reduce white light in a darkroom. This is a visual aid only. The app does NOT claim to be a certified photographic safelight and does not guarantee that the phone screen is safe for undeveloped paper. A clear in-app warning under the PaperDeveloper title states this on the empty timer screen.
+The UI is intentionally red-on-black to reduce white light in a darkroom. This is a visual aid only. The app does NOT claim to be a certified photographic safelight and does not guarantee that the phone screen is safe for undeveloped paper. A clear in-app warning under the PaperDev title states this on the empty timer screen.
 
-LANGUAGE: RUSSIAN TEMPORARILY BLOCKED
-Russian appears in the language list. Selecting it shows a dialog that Russian cannot be chosen for political reasons, with a confirm button. The app does not switch to Russian. Other languages work normally. This is intentional product policy, not a bug.
+LANGUAGE: RUSSIAN TEMPORARILY UNAVAILABLE
+Russian appears in the language list. Selecting it shows an untranslated notice and does not switch the UI to Russian. Other languages work normally. This is intentional product policy required by applicable sanctions; it is not a crash or a missing localization.
 
 HOW TO TEST
 1. Open the app → Setup (gear) → choose paper/chemistry or load a preset.

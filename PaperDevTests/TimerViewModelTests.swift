@@ -151,18 +151,38 @@ final class TimerViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .idle)
     }
 
-    func testSkipToNextPhaseMovesForwardAndFinishesAtTheEnd() {
-        let viewModel = makeViewModel()
+    /// 12: a finished sheet can be corrected (wrong size) without paying for the
+    /// chemistry twice, and it must not become runnable again.
+    func testEditingFinishedRunRevisesUsageInsteadOfCountingItAgain() throws {
+        let store = ChemicalUsageStore.shared
+        var session = DarkroomCatalog.defaultSession
+        let smallSize = try XCTUnwrap(session.paper.availableSizes.first)
+        let largeSize = try XCTUnwrap(session.paper.availableSizes.last)
+        session.paperSize = smallSize
+        store.reset(chemical: session.developer, dilution: session.developerDilution)
+
+        let viewModel = TimerViewModel(session: session)
         viewModel.addPaperRun()
-
-        viewModel.skipToNextPhase()
-        XCTAssertEqual(viewModel.currentPhaseIndex, 1)
-
-        for _ in viewModel.phases {
-            viewModel.skipToNextPhase()
-        }
-
+        let start = Date()
+        viewModel.startOrPause()
+        viewModel.catchUp(to: start.addingTimeInterval(viewModel.phases.reduce(0) { $0 + $1.duration } + 60))
         XCTAssertEqual(viewModel.state, .finished)
+
+        let recorded = store.entries(for: session.developer, dilution: session.developerDilution)
+        XCTAssertEqual(recorded.count, 1)
+        XCTAssertEqual(recorded.first?.areaSquareMeters, smallSize.areaSquareMeters)
+
+        session.paperSize = largeSize
+        viewModel.configureSelectedRun(session: session)
+
+        let revised = store.entries(for: session.developer, dilution: session.developerDilution)
+        XCTAssertEqual(revised.count, 1)
+        XCTAssertEqual(revised.first?.areaSquareMeters, largeSize.areaSquareMeters)
+        XCTAssertEqual(viewModel.state, .finished)
+        XCTAssertTrue(viewModel.isStartPauseDisabled)
+        XCTAssertEqual(viewModel.session.paperSize.id, largeSize.id)
+
+        store.reset(chemical: session.developer, dilution: session.developerDilution)
     }
 
     func testFormattedRemainingTimeShowsPlaceholderWithoutRuns() {

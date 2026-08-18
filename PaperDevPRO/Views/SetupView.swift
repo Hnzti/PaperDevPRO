@@ -7,6 +7,8 @@ struct SetupView: View {
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
 
     let initialSession: DevelopmentSession
+    /// The selected sheet already ran to the end – editing it rewrites a finished record.
+    let isEditingFinishedRun: Bool
     let onResetProject: () -> Void
     let onOpenSettings: () -> Void
     let onApply: (DevelopmentSession) -> Void
@@ -67,11 +69,13 @@ struct SetupView: View {
 
     init(
         initialSession: DevelopmentSession,
+        isEditingFinishedRun: Bool = false,
         onResetProject: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {},
         onApply: @escaping (DevelopmentSession) -> Void
     ) {
         self.initialSession = initialSession
+        self.isEditingFinishedRun = isEditingFinishedRun
         self.onResetProject = onResetProject
         self.onOpenSettings = onOpenSettings
         self.onApply = onApply
@@ -123,6 +127,11 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     topBar
                         .padding(.top, 8)
+
+                    if isEditingFinishedRun {
+                        finishedRunNotice
+                    }
+
                     projectResetButton
 
                     settingsSection(title: copy.sectionPresets) {
@@ -333,6 +342,7 @@ struct SetupView: View {
                         }
                     }
 
+                    documentationLegend
                 }
                 .padding(20)
             }
@@ -416,10 +426,10 @@ struct SetupView: View {
 
             VStack(spacing: 20) {
                 Text(copy.confirmTitle)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
 
                 Text(kind == .project ? copy.confirmProjectMessage : copy.confirmSetupMessage)
-                    .font(.system(size: 15, weight: .semibold))
+                    .darkroomFont(15, weight: .semibold)
                     .multilineTextAlignment(.center)
                     .opacity(0.8)
 
@@ -452,7 +462,7 @@ struct SetupView: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 17, weight: .bold))
+                .darkroomFont(17, weight: .bold)
                 .foregroundStyle(filled ? DarkroomPalette.black : DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -490,7 +500,7 @@ struct SetupView: View {
             Spacer()
 
             Text(copy.setupTitle)
-                .font(.system(size: 24, weight: .bold))
+                .darkroomFont(24, weight: .bold)
                 .foregroundStyle(DarkroomPalette.red)
 
             Spacer()
@@ -500,6 +510,25 @@ struct SetupView: View {
                 onOpenSettings()
             }
         }
+    }
+
+    private var finishedRunNotice: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle")
+                .darkroomFont(16, weight: .bold)
+
+            Text(copy.finishedRunNotice)
+                .darkroomFont(14, weight: .semibold)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(DarkroomPalette.red)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(DarkroomPalette.red, lineWidth: 2)
+        )
+        .accessibilityElement(children: .combine)
     }
 
     private var projectResetButton: some View {
@@ -517,7 +546,7 @@ struct SetupView: View {
     private func resetActionButton(title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .bold))
+                .darkroomFont(16, weight: .bold)
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -943,7 +972,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(copy.customSizeTitle)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
 
                 HStack(spacing: 18) {
@@ -972,13 +1001,14 @@ struct SetupView: View {
                     onConfirm(
                         PaperSize(
                             widthCentimeters: customWidthCentimeters,
-                            heightCentimeters: customHeightCentimeters
+                            heightCentimeters: customHeightCentimeters,
+                            nativeUnit: settingsStore.preferredLengthUnit
                         )
                     )
                     activePicker = nil
                 } label: {
                     Text(copy.confirmYes)
-                        .font(.system(size: 22, weight: .bold))
+                        .darkroomFont(22, weight: .bold)
                         .foregroundStyle(DarkroomPalette.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -995,19 +1025,18 @@ struct SetupView: View {
         .preferredColorScheme(.dark)
     }
 
-    /// Half-step grid, so a 2.5 cm test strip (and 1/4" imperial steps) stays reachable.
-    /// In imperial mode the wheel walks whole and half inches.
+    /// Whole units only – centimetres in metric, inches in imperial.
     private var customSizeOptions: [Double] {
         switch settingsStore.unitSystem {
         case .metric:
-            return Array(stride(from: 0.5, through: 100.0, by: 0.5))
+            return Array(stride(from: 1.0, through: 100.0, by: 1.0))
         case .imperial:
-            return Array(stride(from: 0.5, through: 40.0, by: 0.5)).map { $0 * 2.54 }
+            return Array(stride(from: 1.0, through: 40.0, by: 1.0)).map { $0 * 2.54 }
         }
     }
 
     private func snappedCustomSize(_ value: Double) -> Double {
-        let clamped = min(max(customSizeOptions.first ?? 0.5, value), customSizeOptions.last ?? 100)
+        let clamped = min(max(customSizeOptions.first ?? 1, value), customSizeOptions.last ?? 100)
 
         return customSizeOptions.min { lhs, rhs in
             abs(lhs - clamped) < abs(rhs - clamped)
@@ -1043,7 +1072,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
 
                 Picker(copy.temperatureLabel, selection: selectedTemperatureBinding) {
@@ -1083,7 +1112,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
 
                 HStack(spacing: 18) {
@@ -1135,7 +1164,7 @@ struct SetupView: View {
 
             VStack(alignment: .leading, spacing: 24) {
                 Text(title)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
 
                 HStack(spacing: 18) {
@@ -1186,7 +1215,7 @@ struct SetupView: View {
             activePicker = nil
         } label: {
             Text(copy.confirmYes)
-                .font(.system(size: 22, weight: .bold))
+                .darkroomFont(22, weight: .bold)
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -1210,7 +1239,7 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(title)
-                        .font(.system(size: 28, weight: .bold))
+                        .darkroomFont(28, weight: .bold)
                         .foregroundStyle(DarkroomPalette.red)
                         .padding(.bottom, 6)
 
@@ -1228,7 +1257,7 @@ struct SetupView: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             Text(copy.pickBrand)
-                .font(.system(size: 14, weight: .semibold))
+                .darkroomFont(14, weight: .semibold)
                 .foregroundStyle(DarkroomPalette.red.opacity(0.75))
 
             // Scrolls instead of squeezing every brand into one row – the catalog grows.
@@ -1240,7 +1269,7 @@ struct SetupView: View {
                             pickerBrandFilter = brand
                         } label: {
                             Text(brand)
-                                .font(.system(size: 16, weight: .bold))
+                                .darkroomFont(16, weight: .bold)
                                 .foregroundStyle(DarkroomPalette.red)
                                 .lineLimit(1)
                                 .padding(.horizontal, 18)
@@ -1275,15 +1304,15 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 14, weight: .bold))
+                    .darkroomFont(14, weight: .bold)
                 Text(copy.legendDocumented)
-                    .font(.system(size: 13, weight: .semibold))
+                    .darkroomFont(13, weight: .semibold)
             }
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 14, weight: .bold))
+                    .darkroomFont(14, weight: .bold)
                 Text(copy.legendInterpolated)
-                    .font(.system(size: 13, weight: .semibold))
+                    .darkroomFont(13, weight: .semibold)
             }
         }
         .foregroundStyle(DarkroomPalette.red.opacity(0.75))
@@ -1301,15 +1330,15 @@ struct SetupView: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: .bold))
+                    .darkroomFont(20, weight: .bold)
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title)
-                        .font(.system(size: 18, weight: .bold))
+                        .darkroomFont(18, weight: .bold)
 
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(size: 14, weight: .semibold))
+                            .darkroomFont(14, weight: .semibold)
                     }
                 }
 
@@ -1317,7 +1346,7 @@ struct SetupView: View {
 
                 if let isDocumented {
                     Image(systemName: isDocumented ? "checkmark.seal.fill" : "exclamationmark.triangle")
-                        .font(.system(size: 16, weight: .bold))
+                        .darkroomFont(16, weight: .bold)
                         .opacity(isDocumented ? 1 : 0.8)
                         .accessibilityLabel(isDocumented ? copy.a11yDocumented : copy.a11yInterpolated)
                 }
@@ -1339,7 +1368,7 @@ struct SetupView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold))
+                .darkroomFont(16, weight: .semibold)
                 .foregroundStyle(DarkroomPalette.red)
                 .padding(.leading, 18)
 
@@ -1375,15 +1404,15 @@ struct SetupView: View {
             } label: {
                 HStack(spacing: 12) {
                     Text(copy.rowTransfer)
-                        .font(.system(size: 18, weight: .semibold))
+                        .darkroomFont(18, weight: .semibold)
 
                     Spacer(minLength: 16)
 
                     Text(value)
-                        .font(.system(size: 18, weight: .bold))
+                        .darkroomFont(18, weight: .bold)
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .bold))
+                        .darkroomFont(14, weight: .bold)
                 }
             }
             .buttonStyle(.plain)
@@ -1391,10 +1420,10 @@ struct SetupView: View {
             Button(action: toggleSync) {
                 HStack(spacing: 5) {
                     Image(systemName: isSynced ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 14, weight: .bold))
+                        .darkroomFont(14, weight: .bold)
 
                     Text(copy.sync)
-                        .font(.system(size: 12, weight: .bold))
+                        .darkroomFont(12, weight: .bold)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 7)
@@ -1422,7 +1451,7 @@ struct SetupView: View {
         } label: {
             HStack {
                 Text(copy.sectionToning)
-                    .font(.system(size: 18, weight: isToningEnabled ? .bold : .semibold))
+                    .darkroomFont(18, weight: isToningEnabled ? .bold : .semibold)
                 Spacer()
                 darkroomSwitch(isOn: isToningEnabled)
             }
@@ -1467,18 +1496,18 @@ struct SetupView: View {
 
         return HStack(spacing: 12) {
             Text(copy.rowTime)
-                .font(.system(size: 18, weight: .semibold))
+                .darkroomFont(18, weight: .semibold)
 
             Spacer(minLength: 16)
 
             HStack(spacing: 6) {
                 Text(value)
-                    .font(.system(size: 18, weight: .bold))
+                    .darkroomFont(18, weight: .bold)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
                 Image(systemName: documented ? "checkmark.seal.fill" : "exclamationmark.triangle")
-                    .font(.system(size: 14, weight: .bold))
+                    .darkroomFont(14, weight: .bold)
                     .opacity(documented ? 1 : 0.8)
                     .accessibilityLabel(documented ? copy.a11yDocumented : copy.a11yInterpolated)
             }
@@ -1519,16 +1548,16 @@ struct SetupView: View {
     ) -> some View {
         HStack(spacing: 12) {
             Text(copy.rowUsed)
-                .font(.system(size: 18, weight: .semibold))
+                .darkroomFont(18, weight: .semibold)
 
             Spacer(minLength: 16)
 
             Text("\(usageStore.count(for: chemical, dilution: dilution))x")
-                .font(.system(size: 18, weight: .bold))
+                .darkroomFont(18, weight: .bold)
 
             Button(action: onReset) {
                 Text(copy.reset)
-                    .font(.system(size: 13, weight: .bold))
+                    .darkroomFont(13, weight: .bold)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .overlay(
@@ -1541,10 +1570,10 @@ struct SetupView: View {
             Button(action: toggleSync) {
                 HStack(spacing: 5) {
                     Image(systemName: isSynced ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 14, weight: .bold))
+                        .darkroomFont(14, weight: .bold)
 
                     Text(copy.sync)
-                        .font(.system(size: 12, weight: .bold))
+                        .darkroomFont(12, weight: .bold)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 7)
@@ -1563,19 +1592,19 @@ struct SetupView: View {
     private func rowContent(title: String, value: String, showsChevron: Bool) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold))
+                .darkroomFont(18, weight: .semibold)
 
             Spacer(minLength: 16)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .darkroomFont(18, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
 
             if showsChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .bold))
+                    .darkroomFont(14, weight: .bold)
             }
         }
         .foregroundStyle(DarkroomPalette.red)
@@ -1593,7 +1622,7 @@ struct SetupView: View {
     private func circularIconButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 24, weight: .bold))
+                .darkroomFont(24, weight: .bold)
                 .foregroundStyle(DarkroomPalette.red)
                 .frame(width: 56, height: 56)
                 .background(Circle().fill(cardColor))
@@ -2118,6 +2147,7 @@ private func darkroomSwitch(isOn: Bool) -> some View {
 
 struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var isLanguagePickerPresented = false
     @State private var isRussianBlockedAlertPresented = false
@@ -2126,7 +2156,7 @@ struct SettingsSheetView: View {
     private var copy: AppCopy { settingsStore.copy }
 
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.0"
     }
 
     var body: some View {
@@ -2153,10 +2183,10 @@ struct SettingsSheetView: View {
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack {
                                         Text(copy.brightnessLevel)
-                                            .font(.system(size: 18, weight: .regular))
+                                            .darkroomFont(18, weight: .regular)
                                         Spacer()
                                         Text("\(Int((settingsStore.darkroomBrightness * 100).rounded())) %")
-                                            .font(.system(size: 18, weight: .bold))
+                                            .darkroomFont(18, weight: .bold)
                                     }
                                     redSlider(
                                         value: $settingsStore.darkroomBrightness,
@@ -2217,8 +2247,16 @@ struct SettingsSheetView: View {
                         settingsCard {
                             readOnlySettingsRow(title: copy.version, value: appVersion)
                             settingsDivider
+                            optionRow(title: copy.privacyPolicy, value: "") {
+                                openURL(AppInfo.privacyURL)
+                            }
+                            settingsDivider
+                            optionRow(title: copy.support, value: "") {
+                                openURL(AppInfo.supportURL)
+                            }
+                            settingsDivider
                             Text(copy.copyright)
-                                .font(.system(size: 14, weight: .regular))
+                                .darkroomFont(14, weight: .regular)
                                 .foregroundStyle(DarkroomPalette.red.opacity(0.85))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
@@ -2259,7 +2297,7 @@ struct SettingsSheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(copy.languageTitle)
-                        .font(.system(size: 28, weight: .bold))
+                        .darkroomFont(28, weight: .bold)
                         .foregroundStyle(DarkroomPalette.red)
                         .padding(.bottom, 6)
 
@@ -2276,12 +2314,12 @@ struct SettingsSheetView: View {
                         } label: {
                             HStack {
                                 Text(language.displayName)
-                                    .font(.system(size: 20, weight: language == settingsStore.language ? .bold : .regular))
+                                    .darkroomFont(20, weight: language == settingsStore.language ? .bold : .regular)
                                     .opacity(language.isTemporarilyBlocked ? 0.55 : 1)
                                 Spacer()
                                 if language == settingsStore.language {
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: 18, weight: .bold))
+                                        .darkroomFont(18, weight: .bold)
                                 }
                             }
                             .foregroundStyle(DarkroomPalette.red)
@@ -2325,7 +2363,7 @@ struct SettingsSheetView: View {
 
             VStack(spacing: 20) {
                 Text(copy.russianLanguageBlockedMessage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .darkroomFont(18, weight: .semibold)
                     .multilineTextAlignment(.center)
                     .opacity(0.95)
 
@@ -2335,7 +2373,7 @@ struct SettingsSheetView: View {
                     }
                 } label: {
                     Text(copy.confirmYes)
-                        .font(.system(size: 17, weight: .bold))
+                        .darkroomFont(17, weight: .bold)
                         .foregroundStyle(DarkroomPalette.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -2365,7 +2403,7 @@ struct SettingsSheetView: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 24, weight: .bold))
+                    .darkroomFont(24, weight: .bold)
                     .foregroundStyle(DarkroomPalette.red)
                     .frame(width: 56, height: 56)
                     .background(Circle().fill(cardColor))
@@ -2376,7 +2414,7 @@ struct SettingsSheetView: View {
             Spacer()
 
             Text(copy.settingsTitle)
-                .font(.system(size: 24, weight: .bold))
+                .darkroomFont(24, weight: .bold)
                 .foregroundStyle(DarkroomPalette.red)
 
             Spacer()
@@ -2412,7 +2450,7 @@ struct SettingsSheetView: View {
         } label: {
             HStack {
                 Text(title)
-                    .font(.system(size: 18, weight: isOn.wrappedValue ? .bold : .regular))
+                    .darkroomFont(18, weight: isOn.wrappedValue ? .bold : .regular)
                 Spacer()
                 redSwitch(isOn: isOn.wrappedValue)
             }
@@ -2469,15 +2507,17 @@ struct SettingsSheetView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Text(title)
-                    .font(.system(size: 18, weight: .regular))
+                    .darkroomFont(18, weight: .regular)
 
                 Spacer(minLength: 16)
 
-                Text(value)
-                    .font(.system(size: 18, weight: .bold))
+                if !value.isEmpty {
+                    Text(value)
+                        .darkroomFont(18, weight: .bold)
+                }
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .bold))
+                    .darkroomFont(14, weight: .bold)
             }
             .foregroundStyle(DarkroomPalette.red)
             .padding(.horizontal, 18)
@@ -2494,25 +2534,25 @@ struct SettingsSheetView: View {
     ) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 18, weight: .regular))
+                .darkroomFont(18, weight: .regular)
 
             Spacer(minLength: 12)
 
             Button(action: onDecrement) {
                 Image(systemName: "minus")
-                    .font(.system(size: 16, weight: .bold))
+                    .darkroomFont(16, weight: .bold)
                     .frame(width: 36, height: 36)
                     .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1))
             }
             .buttonStyle(.plain)
 
             Text(valueText)
-                .font(.system(size: 18, weight: .bold))
+                .darkroomFont(18, weight: .bold)
                 .frame(minWidth: 48)
 
             Button(action: onIncrement) {
                 Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
+                    .darkroomFont(16, weight: .bold)
                     .frame(width: 36, height: 36)
                     .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.45), lineWidth: 1))
             }
@@ -2526,12 +2566,12 @@ struct SettingsSheetView: View {
     private func readOnlySettingsRow(title: String, value: String) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 18, weight: .regular))
+                .darkroomFont(18, weight: .regular)
 
             Spacer(minLength: 16)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .darkroomFont(18, weight: .bold)
         }
         .foregroundStyle(DarkroomPalette.red)
         .padding(.horizontal, 18)
@@ -2570,12 +2610,12 @@ private struct PresetsSheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(copy.presetsTitle)
-                        .font(.system(size: 28, weight: .bold))
+                        .darkroomFont(28, weight: .bold)
                         .foregroundStyle(DarkroomPalette.red)
                         .padding(.bottom, 4)
 
                     Text(copy.savePresetHeader)
-                        .font(.system(size: 16, weight: .bold))
+                        .darkroomFont(16, weight: .bold)
                         .foregroundStyle(DarkroomPalette.red)
 
                     ForEach(DevelopmentPreset.alphabetLetters, id: \.self) { letter in
@@ -2608,10 +2648,10 @@ private struct PresetsSheetView: View {
             } label: {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(name)
-                        .font(.system(size: 18, weight: .bold))
+                        .darkroomFont(18, weight: .bold)
 
                     Text(preset?.session.paper.displayName ?? copy.emptyPresetSlot)
-                        .font(.system(size: 13, weight: .semibold))
+                        .darkroomFont(13, weight: .semibold)
                         .lineLimit(1)
                 }
                 .foregroundStyle(DarkroomPalette.red)
@@ -2656,7 +2696,7 @@ private struct PresetsSheetView: View {
 
     private func presetActionLabel(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 12, weight: .bold))
+            .darkroomFont(12, weight: .bold)
             .foregroundStyle(DarkroomPalette.red)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -2689,10 +2729,10 @@ private struct PresetsSheetView: View {
 
             VStack(spacing: 20) {
                 Text(copy.confirmTitle)
-                    .font(.system(size: 28, weight: .bold))
+                    .darkroomFont(28, weight: .bold)
 
                 Text(message)
-                    .font(.system(size: 15, weight: .semibold))
+                    .darkroomFont(15, weight: .semibold)
                     .multilineTextAlignment(.center)
                     .opacity(0.8)
 
@@ -2702,7 +2742,7 @@ private struct PresetsSheetView: View {
                         withAnimation(.easeInOut(duration: 0.15)) { pendingAction = nil }
                     } label: {
                         Text(copy.confirmYes)
-                            .font(.system(size: 17, weight: .bold))
+                            .darkroomFont(17, weight: .bold)
                             .foregroundStyle(DarkroomPalette.red)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -2718,7 +2758,7 @@ private struct PresetsSheetView: View {
                         withAnimation(.easeInOut(duration: 0.15)) { pendingAction = nil }
                     } label: {
                         Text(copy.confirmNo)
-                            .font(.system(size: 17, weight: .bold))
+                            .darkroomFont(17, weight: .bold)
                             .foregroundStyle(DarkroomPalette.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)

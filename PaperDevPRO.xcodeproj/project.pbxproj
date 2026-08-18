@@ -14,6 +14,7 @@
 		AA000000000000000000000F /* ChemicalCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001F /* ChemicalCatalog.swift */; };
 		AA0000000000000000000100 /* DarkroomCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* DarkroomCatalog.swift */; };
 		AA0000000000000000000101 /* RunCompletionNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000111 /* RunCompletionNotifier.swift */; };
+		AA000000000000000000010A /* DarkroomFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011B /* DarkroomFeedback.swift */; };
 		AA0000000000000000000005 /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* TimerViewModel.swift */; };
 		AA0000000000000000000006 /* DarkroomTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* DarkroomTimerView.swift */; };
 		AA0000000000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000017 /* SetupView.swift */; };
@@ -25,9 +26,15 @@
 		AA000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001D /* PrivacyInfo.xcprivacy */; };
 		AA000000000000000000000E /* Localizations.json in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001E /* Localizations.json */; };
 		AA0000000000000000000102 /* DarkroomCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000112 /* DarkroomCatalogTests.swift */; };
+		AA0000000000000000000106 /* CatalogExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000117 /* CatalogExport.swift */; };
+		AA0000000000000000000107 /* DarkroomCatalogFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000118 /* DarkroomCatalogFile.swift */; };
 		AA0000000000000000000103 /* DarkroomModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000113 /* DarkroomModelTests.swift */; };
 		AA0000000000000000000104 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000114 /* LocalizationTests.swift */; };
 		AA0000000000000000000105 /* TimerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000115 /* TimerViewModelTests.swift */; };
+		AA0000000000000000000108 /* DarkroomCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011C /* DarkroomCatalog.json */; };
+		AA000000000000000000010B /* darkroom-warning.wav in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011D /* darkroom-warning.wav */; };
+		AA000000000000000000010C /* darkroom-phase.wav in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011E /* darkroom-phase.wav */; };
+		AA000000000000000000010D /* darkroom-complete.wav in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011F /* darkroom-complete.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,7 +46,10 @@
 		AA000000000000000000001F /* ChemicalCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChemicalCatalog.swift; sourceTree = "<group>"; };
 		AA0000000000000000000110 /* DarkroomCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomCatalog.swift; sourceTree = "<group>"; };
 		AA0000000000000000000111 /* RunCompletionNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunCompletionNotifier.swift; sourceTree = "<group>"; };
+		AA000000000000000000011B /* DarkroomFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomFeedback.swift; sourceTree = "<group>"; };
 		AA0000000000000000000112 /* DarkroomCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomCatalogTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000117 /* CatalogExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogExport.swift; sourceTree = "<group>"; };
+		AA0000000000000000000118 /* DarkroomCatalogFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomCatalogFile.swift; sourceTree = "<group>"; };
 		AA0000000000000000000113 /* DarkroomModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomModelTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000114 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000115 /* TimerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModelTests.swift; sourceTree = "<group>"; };
@@ -54,6 +64,10 @@
 		AA000000000000000000001C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000000000000000000001D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA000000000000000000001E /* Localizations.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Localizations.json; sourceTree = "<group>"; };
+		AA000000000000000000011C /* DarkroomCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = DarkroomCatalog.json; sourceTree = "<group>"; };
+		AA000000000000000000011D /* darkroom-warning.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = darkroom-warning.wav; sourceTree = "<group>"; };
+		AA000000000000000000011E /* darkroom-phase.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = darkroom-phase.wav; sourceTree = "<group>"; };
+		AA000000000000000000011F /* darkroom-complete.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = darkroom-complete.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +105,9 @@
 				AA000000000000000000001C /* Assets.xcassets */,
 				AA000000000000000000001D /* PrivacyInfo.xcprivacy */,
 				AA000000000000000000001E /* Localizations.json */,
+				AA000000000000000000011D /* darkroom-warning.wav */,
+				AA000000000000000000011E /* darkroom-phase.wav */,
+				AA000000000000000000011F /* darkroom-complete.wav */,
 				AA0000000000000000000032 /* Models */,
 				AA0000000000000000000033 /* Data */,
 				AA0000000000000000000034 /* ViewModels */,
@@ -104,6 +121,7 @@
 			children = (
 				AA0000000000000000000013 /* DarkroomModels.swift */,
 				AA0000000000000000000111 /* RunCompletionNotifier.swift */,
+				AA000000000000000000011B /* DarkroomFeedback.swift */,
 				AA0000000000000000000018 /* ChemicalUsageStore.swift */,
 				AA0000000000000000000019 /* PresetStore.swift */,
 				AA000000000000000000001A /* DarkroomSettingsStore.swift */,
@@ -118,6 +136,8 @@
 				AA0000000000000000000014 /* PaperCatalog.swift */,
 				AA000000000000000000001F /* ChemicalCatalog.swift */,
 				AA0000000000000000000110 /* DarkroomCatalog.swift */,
+				AA0000000000000000000118 /* DarkroomCatalogFile.swift */,
+				AA000000000000000000011C /* DarkroomCatalog.json */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -152,6 +172,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000112 /* DarkroomCatalogTests.swift */,
+				AA0000000000000000000117 /* CatalogExport.swift */,
 				AA0000000000000000000113 /* DarkroomModelTests.swift */,
 				AA0000000000000000000114 /* LocalizationTests.swift */,
 				AA0000000000000000000115 /* TimerViewModelTests.swift */,
@@ -256,6 +277,10 @@
 				AA000000000000000000000C /* Assets.xcassets in Resources */,
 				AA000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */,
 				AA000000000000000000000E /* Localizations.json in Resources */,
+				AA0000000000000000000108 /* DarkroomCatalog.json in Resources */,
+				AA000000000000000000010B /* darkroom-warning.wav in Resources */,
+				AA000000000000000000010C /* darkroom-phase.wav in Resources */,
+				AA000000000000000000010D /* darkroom-complete.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,7 +297,9 @@
 				AA0000000000000000000004 /* PaperCatalog.swift in Sources */,
 				AA000000000000000000000F /* ChemicalCatalog.swift in Sources */,
 				AA0000000000000000000100 /* DarkroomCatalog.swift in Sources */,
+				AA0000000000000000000107 /* DarkroomCatalogFile.swift in Sources */,
 				AA0000000000000000000101 /* RunCompletionNotifier.swift in Sources */,
+				AA000000000000000000010A /* DarkroomFeedback.swift in Sources */,
 				AA0000000000000000000005 /* TimerViewModel.swift in Sources */,
 				AA0000000000000000000006 /* DarkroomTimerView.swift in Sources */,
 				AA0000000000000000000007 /* SetupView.swift in Sources */,
@@ -288,6 +315,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000102 /* DarkroomCatalogTests.swift in Sources */,
+				AA0000000000000000000106 /* CatalogExport.swift in Sources */,
 				AA0000000000000000000103 /* DarkroomModelTests.swift in Sources */,
 				AA0000000000000000000104 /* LocalizationTests.swift in Sources */,
 				AA0000000000000000000105 /* TimerViewModelTests.swift in Sources */,
@@ -419,7 +447,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = H7M39C5AJ3;
 				ENABLE_PREVIEWS = YES;
@@ -428,13 +456,13 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -453,7 +481,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = H7M39C5AJ3;
 				ENABLE_PREVIEWS = YES;
@@ -462,13 +490,13 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -485,11 +513,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = H7M39C5AJ3;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -505,11 +533,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = H7M39C5AJ3;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
