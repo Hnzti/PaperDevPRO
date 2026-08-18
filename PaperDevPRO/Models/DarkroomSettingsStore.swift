@@ -66,7 +66,7 @@ final class DarkroomSettingsStore: ObservableObject {
     @Published var language: AppLanguage {
         didSet {
             if language.isTemporarilyBlocked {
-                language = oldValue.isTemporarilyBlocked ? .czech : oldValue
+                language = oldValue.isTemporarilyBlocked ? .english : oldValue
                 return
             }
             defaults.set(language.rawValue, forKey: Keys.language)
@@ -113,7 +113,7 @@ final class DarkroomSettingsStore: ObservableObject {
            !language.isTemporarilyBlocked {
             self.language = language
         } else {
-            self.language = .czech
+            self.language = .english
         }
     }
 

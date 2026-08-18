@@ -118,6 +118,7 @@ struct AppCopy {
     var pickFixerTemperature: String { t("pickFixerTemperature") }
     var pickFixerVolume: String { t("pickFixerVolume") }
     var pickPaper: String { t("pickPaper") }
+    var pickBrand: String { t("pickBrand") }
     var pickProcessDeveloperTime: String { t("pickProcessDeveloperTime") }
     var pickProcessFixerTime: String { t("pickProcessFixerTime") }
     var pickProcessStopBathTime: String { t("pickProcessStopBathTime") }

@@ -212,8 +212,9 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         self.capacityRules = capacityRules
     }
 
-    public func availableTemperatures(for paper: Paper) -> [Double] {
-        let temperatures = matchingRules(for: paper).map(\.temperatureCelsius)
+    public func availableTemperatures(for paper: Paper, chemicalManufacturer: String) -> [Double] {
+        let temperatures = matchingRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+            .map(\.temperatureCelsius)
         let uniqueTemperatures = Array(Set(temperatures)).sorted()
 
         guard let minimum = uniqueTemperatures.first,
@@ -226,25 +227,40 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
     }
 
     /// True když pro papír existuje aspoň jedno explicitní pravidlo v datasheetu
-    /// (podle `paperID`, jinak podle typu RC/FB). Nezohledňuje teplotu.
-    public func isDocumented(for paper: Paper) -> Bool {
-        !documentedRules(for: paper).isEmpty
+    /// (podle `paperID`, jinak podle typu RC/FB u stejné značky). Nezohledňuje teplotu.
+    public func isDocumented(for paper: Paper, chemicalManufacturer: String) -> Bool {
+        !documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer).isEmpty
     }
 
     /// True jen když je zobrazený čas **přesně** z datasheetu pro daný papír
     /// **a** zvolenou teplotu. Interpolace mezi teplotami (např. 34 °C mezi 30 a 35)
     /// nebo fallback z jiného papíru = false → vykřičník.
-    public func isDocumented(for paper: Paper, temperatureCelsius: Double) -> Bool {
-        documentedRules(for: paper).contains { $0.temperatureCelsius == temperatureCelsius }
+    public func isDocumented(
+        for paper: Paper,
+        temperatureCelsius: Double,
+        chemicalManufacturer: String
+    ) -> Bool {
+        documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+            .contains { $0.temperatureCelsius == temperatureCelsius }
     }
 
     /// Teploty přímo uvedené v datasheetu pro daný papír (bez vyplnění mezikroků).
-    public func documentedTemperatures(for paper: Paper) -> [Double] {
-        Array(Set(documentedRules(for: paper).map(\.temperatureCelsius))).sorted()
+    public func documentedTemperatures(for paper: Paper, chemicalManufacturer: String) -> [Double] {
+        Array(
+            Set(
+                documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+                    .map(\.temperatureCelsius)
+            )
+        ).sorted()
     }
 
-    public func timeRange(for paper: Paper, temperatureCelsius: Double) -> TimeRange {
-        let rules = matchingRules(for: paper).sorted { $0.temperatureCelsius < $1.temperatureCelsius }
+    public func timeRange(
+        for paper: Paper,
+        temperatureCelsius: Double,
+        chemicalManufacturer: String
+    ) -> TimeRange {
+        let rules = matchingRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+            .sorted { $0.temperatureCelsius < $1.temperatureCelsius }
 
         if let exactRule = rules.first(where: { $0.temperatureCelsius == temperatureCelsius }) {
             return exactRule.timeRange
@@ -340,21 +356,31 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         capacityRules.first { $0.paperType == paperType }
     }
 
-    /// Pravidla, která jsou pro papír „oficiální“ (paperID, jinak paperType).
-    /// Na rozdíl od `matchingRules` **nepadá** na cizí papíry.
-    private func documentedRules(for paper: Paper) -> [ProcessingTimeRule] {
+    /// Pravidla, která jsou pro papír „oficiální“:
+    /// 1) explicitní `paperID`, jinak 2) `paperType` jen u **stejné značky**.
+    private func documentedRules(
+        for paper: Paper,
+        chemicalManufacturer: String
+    ) -> [ProcessingTimeRule] {
         let exactRules = timeRules.filter { $0.paperID == paper.id }
         if !exactRules.isEmpty {
             return exactRules
         }
 
-        return timeRules.filter { $0.paperType == paper.type }
+        guard DarkroomBrandFamily.sharesDocumentation(chemicalManufacturer, paper.manufacturer) else {
+            return []
+        }
+
+        return timeRules.filter { $0.paperID == nil && $0.paperType == paper.type }
     }
 
     /// Pravidla použitá pro výpočet času: documented → jinak fallback na všechna
     /// (interpolace / odhad bez záruky).
-    private func matchingRules(for paper: Paper) -> [ProcessingTimeRule] {
-        let documented = documentedRules(for: paper)
+    private func matchingRules(
+        for paper: Paper,
+        chemicalManufacturer: String
+    ) -> [ProcessingTimeRule] {
+        let documented = documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer)
         if !documented.isEmpty {
             return documented
         }
@@ -412,7 +438,10 @@ public struct TimeRange: Codable, Hashable {
     public let maximum: TimeInterval
 
     public var recommended: TimeInterval {
-        ((minimum + maximum) / 2).rounded()
+        if minimum == maximum {
+            return minimum.rounded()
+        }
+        return ((minimum + maximum) / 2).rounded()
     }
 
     public init(seconds: TimeInterval) {
@@ -468,9 +497,28 @@ public struct Chemical: Identifiable, Codable, Hashable {
     }
 
     /// True když je pro daný papír zdokumentovaná alespoň jedna kombinace
-    /// (ředění) v datasheetu.
+    /// (ředění) v datasheetu stejné značky / HARMAN rodiny, nebo explicitní `paperID`.
     public func isDocumented(for paper: Paper) -> Bool {
-        dilutions.contains { $0.isDocumented(for: paper) }
+        if dilutions.contains(where: {
+            $0.isDocumented(for: paper, chemicalManufacturer: manufacturer)
+        }) {
+            return true
+        }
+
+        // Tónovače často nemají pevný čas, ale mají vydatnost podle typu papíru.
+        guard role == .toner,
+              DarkroomBrandFamily.sharesDocumentation(manufacturer, paper.manufacturer) else {
+            return false
+        }
+
+        return dilutions.contains { dilution in
+            dilution.capacityRules.contains { $0.paperType == paper.type }
+        }
+    }
+
+    public func preferredDilution(for paper: Paper) -> ChemicalDilution {
+        dilutions.first { $0.isDocumented(for: paper, chemicalManufacturer: manufacturer) }
+            ?? dilutions[0]
     }
 
     public init(
@@ -485,6 +533,25 @@ public struct Chemical: Identifiable, Codable, Hashable {
         self.name = name
         self.role = role
         self.dilutions = dilutions
+    }
+}
+
+/// Ilford / Kentmere / HARMAN sdílí datasheetovou kompatibilitu chemie ↔ papír.
+enum DarkroomBrandFamily {
+    static func sharesDocumentation(_ lhs: String, _ rhs: String) -> Bool {
+        if lhs.caseInsensitiveCompare(rhs) == .orderedSame {
+            return true
+        }
+        return isHarmanFamily(lhs) && isHarmanFamily(rhs)
+    }
+
+    static func isHarmanFamily(_ manufacturer: String) -> Bool {
+        switch manufacturer.lowercased() {
+        case "ilford", "kentmere", "harman":
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -657,7 +724,11 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
                 duration: duration(
                     for: .developer,
                     defaultDuration: developerDilution
-                        .timeRange(for: paper, temperatureCelsius: developerTemperatureCelsius)
+                        .timeRange(
+                            for: paper,
+                            temperatureCelsius: developerTemperatureCelsius,
+                            chemicalManufacturer: developer.manufacturer
+                        )
                         .recommended
                 )
             ),
@@ -670,7 +741,11 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
                 duration: duration(
                     for: .stopBath,
                     defaultDuration: stopBathDilution
-                        .timeRange(for: paper, temperatureCelsius: stopBathTemperatureCelsius)
+                        .timeRange(
+                            for: paper,
+                            temperatureCelsius: stopBathTemperatureCelsius,
+                            chemicalManufacturer: stopBath.manufacturer
+                        )
                         .recommended
                 )
             ),
@@ -683,7 +758,11 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
                 duration: duration(
                     for: .fixer,
                     defaultDuration: fixerDilution
-                        .timeRange(for: paper, temperatureCelsius: fixerTemperatureCelsius)
+                        .timeRange(
+                            for: paper,
+                            temperatureCelsius: fixerTemperatureCelsius,
+                            chemicalManufacturer: fixer.manufacturer
+                        )
                         .recommended
                 )
             ),

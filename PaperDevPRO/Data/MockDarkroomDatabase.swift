@@ -1,5 +1,19 @@
 import Foundation
 
+private enum IlfordCatalogSizes {
+    static let sheets: [PaperSize] = [
+        PaperSize(widthCentimeters: 10.2, heightCentimeters: 12.7),
+        PaperSize(widthCentimeters: 12.7, heightCentimeters: 17.8),
+        PaperSize(widthCentimeters: 13, heightCentimeters: 18),
+        PaperSize(widthCentimeters: 18, heightCentimeters: 24),
+        PaperSize(widthCentimeters: 20.3, heightCentimeters: 25.4),
+        PaperSize(widthCentimeters: 24, heightCentimeters: 30),
+        PaperSize(widthCentimeters: 27.9, heightCentimeters: 35.6),
+        PaperSize(widthCentimeters: 30.5, heightCentimeters: 40.6),
+        PaperSize(widthCentimeters: 40.6, heightCentimeters: 50.8)
+    ]
+}
+
 public enum MockDarkroomDatabase {
     public static let papers: [Paper] = [
         Paper(
@@ -186,6 +200,136 @@ public enum MockDarkroomDatabase {
                 TemperatureTimeFactor(temperatureCelsius: 20, factor: 1.0),
                 TemperatureTimeFactor(temperatureCelsius: 22, factor: 0.8),
                 TemperatureTimeFactor(temperatureCelsius: 24, factor: 0.6)
+            ]
+        ),
+        Paper(
+            id: "ilford-harman-direct-positive-fb",
+            manufacturer: "Ilford",
+            name: "HARMAN Direct Positive FB",
+            type: .fiberBased,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-rc-deluxe",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE RC Deluxe",
+            type: .resinCoated,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-rc-portfolio",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE RC Portfolio",
+            type: .resinCoated,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-rc-warmtone",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE RC Warmtone",
+            type: .resinCoated,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-rc-cooltone",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE RC Cooltone",
+            type: .resinCoated,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-fb-classic",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE FB Classic",
+            type: .fiberBased,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-fb-cooltone",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE FB Cooltone",
+            type: .fiberBased,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-fb-warmtone",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE FB Warmtone",
+            type: .fiberBased,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "ilford-multigrade-art-300",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE ART 300",
+            type: .fiberBased,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
+            ]
+        ),
+        Paper(
+            id: "kentmere-vc-select",
+            manufacturer: "Kentmere",
+            name: "VC Select",
+            type: .resinCoated,
+            availableSizes: IlfordCatalogSizes.sheets,
+            washRules: [
+                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
+            ],
+            developerTemperatureCurve: [
+                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
             ]
         )
     ]
@@ -676,8 +820,460 @@ public enum MockDarkroomDatabase {
                     ]
                 )
             ]
+        ),
+
+        // MARK: - Ilford / HARMAN (dish/tray, 20 °C)
+        // Kapacity přepočtené z 8×10" (0,051562 m²) na m²/L.
+
+        Chemical(
+            id: "ilford-multigrade",
+            manufacturer: "Ilford",
+            name: "MULTIGRADE",
+            role: .developer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 60)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-harman-direct-positive-fb",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        // RC Cooltone – cca 2× čas pro nejchladnější tón (developers TDS)
+                        ProcessingTimeRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 5.2),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.6)
+                    ]
+                ),
+                ChemicalDilution(
+                    ratio: "1+14",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 90)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 120, maximum: 300)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-harman-direct-positive-fb",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 120, maximum: 300)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 180)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-pq-universal",
+            manufacturer: "Ilford",
+            name: "PQ UNIVERSAL",
+            role: .developer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-harman-direct-positive-fb",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 240)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.3)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-bromophen",
+            manufacturer: "Ilford",
+            name: "BROMOPHEN",
+            role: .developer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+3",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 240)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.3)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-harman-warmtone",
+            manufacturer: "Ilford",
+            name: "HARMAN WARMTONE",
+            role: .developer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperID: "ilford-multigrade-fb-warmtone",
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 90, maximum: 180)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.6)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-ilfostop",
+            manufacturer: "Ilford",
+            name: "ILFOSTOP",
+            role: .stopBath,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+19",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 10)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 10)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.5)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-ilfostop-pro",
+            manufacturer: "Ilford",
+            name: "ILFOSTOP PRO",
+            role: .stopBath,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+19",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 10)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 10)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.6),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 4.6)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-rapid-fixer",
+            manufacturer: "Ilford",
+            name: "Rapid Fixer",
+            role: .fixer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+4",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 30)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 60)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                ),
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 60)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-hypam",
+            manufacturer: "Ilford",
+            name: "Hypam",
+            role: .fixer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+4",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 30)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 60)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                ),
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 60)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "ilford-ilfofix-ii",
+            manufacturer: "Ilford",
+            name: "ILFOFIX II",
+            role: .fixer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "stock",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 180)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                )
+            ]
+        ),
+
+        // MARK: - Kentmere (dish/tray, 20 °C)
+        Chemical(
+            id: "kentmere-paper-developer",
+            manufacturer: "Kentmere",
+            name: "Paper Developer",
+            role: .developer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 90)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        )
+                    ],
+                    capacityRules: [
+                        // 100–150 / 75–100 × 8×10 → střed
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 6.4),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 4.5)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "kentmere-stop-bath",
+            manufacturer: "Kentmere",
+            name: "Stop Bath",
+            role: .stopBath,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 20)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 30)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 7.7),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 7.7)
+                    ]
+                )
+            ]
+        ),
+        Chemical(
+            id: "kentmere-fixer",
+            manufacturer: "Kentmere",
+            name: "Fixer",
+            role: .fixer,
+            dilutions: [
+                ChemicalDilution(
+                    ratio: "1+9",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 120)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 300)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.5),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.8)
+                    ]
+                ),
+                ChemicalDilution(
+                    ratio: "1+4",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 90)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(seconds: 180)
+                        )
+                    ],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.5),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                    ]
+                )
+            ]
         )
     ]
+
+    public static var manufacturers: [String] {
+        Array(
+            Set(papers.map(\.manufacturer) + chemicals.map(\.manufacturer))
+        ).sorted()
+    }
+
+    public static var paperManufacturers: [String] {
+        Array(Set(papers.map(\.manufacturer))).sorted()
+    }
 
     public static var developers: [Chemical] {
         chemicals.filter { $0.role == .developer }

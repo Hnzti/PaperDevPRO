@@ -1177,6 +1177,25 @@
     "ja": "印画紙",
     "zh": "相纸"
   },
+  "pickBrand": {
+    "cs": "Značka",
+    "en": "Brand",
+    "de": "Marke",
+    "fr": "Marque",
+    "es": "Marca",
+    "it": "Marca",
+    "sl": "Znamka",
+    "uk": "Бренд",
+    "sv": "Märke",
+    "fi": "Merkki",
+    "nb": "Merke",
+    "da": "Mærke",
+    "sk": "Značka",
+    "ru": "Бренд",
+    "el": "Μάρκα",
+    "ja": "ブランド",
+    "zh": "品牌"
+  },
   "pickProcessDeveloperTime": {
     "cs": "Čas vývojky",
     "en": "Developer time",
