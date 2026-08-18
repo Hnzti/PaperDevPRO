@@ -2,6 +2,8 @@ import Foundation
 
 enum AppInfo {
     static let displayName = "PaperDev"
+    static let contactName = "Jan Kalina"
+    static let contactEmail = "galerie.musheri_7e@icloud.com"
     static let supportURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/issues")!
     static let privacyURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/blob/main/docs/privacy.html")!
     /// Same sentence in every language – do not translate.
@@ -249,7 +251,26 @@ struct AppCopy {
     var reset: String { t("reset") }
     var russianLanguageBlockedMessage: String { AppInfo.russianBlockedMessage }
     var privacyPolicy: String { t("privacyPolicy") }
+    var privacyEffectiveDate: String { t("privacyEffectiveDate") }
     var support: String { t("support") }
+
+    var privacySections: [(title: String, body: String)] {
+        [
+            (t("privacyOverviewTitle"), t("privacyOverviewBody")),
+            (t("privacyDataTitle"), t("privacyDataBody")),
+            (t("privacyTrackingTitle"), t("privacyTrackingBody")),
+            (t("privacyThirdPartiesTitle"), t("privacyThirdPartiesBody")),
+            (t("privacyChildrenTitle"), t("privacyChildrenBody")),
+            (t("privacyContactTitle"), tf("privacyContactBody", AppInfo.contactEmail)),
+        ]
+    }
+
+    var supportSections: [(title: String, body: String)] {
+        [
+            ("", t("supportIntroBody")),
+            (t("privacyContactTitle"), tf("supportContactBody", AppInfo.contactEmail)),
+        ]
+    }
     var safelightWarning: String { t("safelightWarning") }
     var resetProject: String { t("resetProject") }
     var resetSetup: String { t("resetSetup") }

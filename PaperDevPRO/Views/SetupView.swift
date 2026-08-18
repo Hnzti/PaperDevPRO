@@ -2211,13 +2211,89 @@ private func darkroomSwitch(isOn: Bool) -> some View {
         .animation(.easeInOut(duration: 0.15), value: isOn)
 }
 
+struct SettingsTextPage: View {
+    let title: String
+    let subtitle: String?
+    let sections: [(title: String, body: String)]
+    let onBack: () -> Void
+
+    private let cardColor = DarkroomPalette.black
+
+    var body: some View {
+        ZStack {
+            DarkroomPalette.black
+                .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                HStack {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.left")
+                            .darkroomFont(24, weight: .bold)
+                            .foregroundStyle(DarkroomPalette.red)
+                            .frame(width: 56, height: 56)
+                            .background(Circle().fill(cardColor))
+                            .overlay(Circle().stroke(DarkroomPalette.red.opacity(0.35), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    Text(title)
+                        .darkroomFont(24, weight: .bold)
+                        .foregroundStyle(DarkroomPalette.red)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                    Spacer()
+
+                    Color.clear
+                        .frame(width: 56, height: 56)
+                }
+
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 22) {
+                        if let subtitle {
+                            Text(subtitle)
+                                .darkroomFont(15, weight: .semibold)
+                        }
+
+                        ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                            VStack(alignment: .leading, spacing: 8) {
+                                if !section.title.isEmpty {
+                                    Text(section.title)
+                                        .darkroomFont(18, weight: .bold)
+                                }
+
+                                Text(section.body)
+                                    .darkroomFont(16, weight: .regular)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .foregroundStyle(DarkroomPalette.red)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 24)
+                    .textSelection(.enabled)
+                }
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+        }
+        .preferredColorScheme(.dark)
+        .statusBar(hidden: true)
+    }
+}
+
 struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var isLanguagePickerPresented = false
     @State private var isRussianBlockedAlertPresented = false
     var onBack: (() -> Void)? = nil
+    var onOpenPrivacy: () -> Void = {}
+    var onOpenSupport: () -> Void = {}
 
     private let cardColor = DarkroomPalette.black
     private var copy: AppCopy { settingsStore.copy }
@@ -2315,11 +2391,11 @@ struct SettingsSheetView: View {
                             readOnlySettingsRow(title: copy.version, value: appVersion)
                             settingsDivider
                             optionRow(title: copy.privacyPolicy, value: "") {
-                                openURL(AppInfo.privacyURL)
+                                onOpenPrivacy()
                             }
                             settingsDivider
                             optionRow(title: copy.support, value: "") {
-                                openURL(AppInfo.supportURL)
+                                onOpenSupport()
                             }
                             settingsDivider
                             Text(copy.copyright)

@@ -104,6 +104,8 @@ private extension Font.Weight {
 public enum SetupRoute: Hashable {
     case setup
     case settings
+    case privacy
+    case support
 }
 
 @MainActor
@@ -163,7 +165,25 @@ public struct DarkroomTimerView: View {
                 viewModel.configureSelectedRun(session: session)
             }
         case .settings:
-            SettingsSheetView(onBack: popRoute)
+            SettingsSheetView(
+                onBack: popRoute,
+                onOpenPrivacy: { navigationPath.append(.privacy) },
+                onOpenSupport: { navigationPath.append(.support) }
+            )
+        case .privacy:
+            SettingsTextPage(
+                title: settingsStore.copy.privacyPolicy,
+                subtitle: settingsStore.copy.privacyEffectiveDate,
+                sections: settingsStore.copy.privacySections,
+                onBack: popRoute
+            )
+        case .support:
+            SettingsTextPage(
+                title: settingsStore.copy.support,
+                subtitle: nil,
+                sections: settingsStore.copy.supportSections,
+                onBack: popRoute
+            )
         }
     }
 
