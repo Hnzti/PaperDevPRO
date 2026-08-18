@@ -1,340 +1,14 @@
 import Foundation
 
-private enum IlfordCatalogSizes {
-    static let sheets: [PaperSize] = [
-        PaperSize(widthCentimeters: 10.2, heightCentimeters: 12.7),
-        PaperSize(widthCentimeters: 12.7, heightCentimeters: 17.8),
-        PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-        PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-        PaperSize(widthCentimeters: 20.3, heightCentimeters: 25.4),
-        PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-        PaperSize(widthCentimeters: 27.9, heightCentimeters: 35.6),
-        PaperSize(widthCentimeters: 30.5, heightCentimeters: 40.6),
-        PaperSize(widthCentimeters: 40.6, heightCentimeters: 50.8)
-    ]
-}
+/// Chemicals, grouped per manufacturer. Times and capacities come from the
+/// current manufacturer datasheets; anything derived rather than printed there
+/// is flagged with `isEstimated: true` so the UI shows "interpolated" instead of
+/// the datasheet seal.
+enum ChemicalCatalog {
+    static let all: [Chemical] = foma + ilford + kentmere
 
-public enum MockDarkroomDatabase {
-    public static let papers: [Paper] = [
-        Paper(
-            id: "foma-fomabrom-variant",
-            manufacturer: "Foma",
-            name: "Fomabrom Variant",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 35 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1),
-                TemperatureTimeFactor(temperatureCelsius: 25, factor: 100.0 / 130.0),
-                TemperatureTimeFactor(temperatureCelsius: 30, factor: 70.0 / 130.0),
-                TemperatureTimeFactor(temperatureCelsius: 35, factor: 45.0 / 130.0)
-            ]
-        ),
-        Paper(
-            id: "foma-fomaspeed-variant",
-            manufacturer: "Foma",
-            name: "Fomaspeed Variant",
-            type: .resinCoated,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 4 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1),
-                TemperatureTimeFactor(temperatureCelsius: 25, factor: 60.0 / 90.0),
-                TemperatureTimeFactor(temperatureCelsius: 30, factor: 40.0 / 90.0),
-                TemperatureTimeFactor(temperatureCelsius: 35, factor: 25.0 / 90.0)
-            ]
-        ),
-        Paper(
-            id: "foma-fomaspeed",
-            manufacturer: "Foma",
-            name: "Fomaspeed",
-            type: .resinCoated,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 4 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "foma-fomabrom",
-            manufacturer: "Foma",
-            name: "Fomabrom",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "foma-fomabrom-n-chamois",
-            manufacturer: "Foma",
-            name: "Fomabrom N chamois",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "foma-fomatone-mg-classic",
-            manufacturer: "Foma",
-            name: "Fomatone MG Classic",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 9, heightCentimeters: 13),
-                PaperSize(widthCentimeters: 10, heightCentimeters: 15),
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "foma-retrobrom-sp",
-            manufacturer: "Foma",
-            name: "Retrobrom Sp",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 13, heightCentimeters: 18),
-                PaperSize(widthCentimeters: 18, heightCentimeters: 24),
-                PaperSize(widthCentimeters: 24, heightCentimeters: 30),
-                PaperSize(widthCentimeters: 30, heightCentimeters: 40),
-                PaperSize(widthCentimeters: 40, heightCentimeters: 50),
-                PaperSize(widthCentimeters: 50, heightCentimeters: 60)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 30 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "foma-fomapastel-mg",
-            manufacturer: "Foma",
-            name: "Fomapastel MG",
-            type: .fiberBased,
-            availableSizes: [
-                PaperSize(widthCentimeters: 20.3, heightCentimeters: 25.4),
-                PaperSize(widthCentimeters: 30.5, heightCentimeters: 40.6),
-                PaperSize(widthCentimeters: 50.8, heightCentimeters: 61)
-            ],
-            washRules: [
-                WashRule(maximumTemperatureCelsius: 12, duration: 45 * 60),
-                WashRule(minimumTemperatureCelsius: 12, duration: 35 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 18, factor: 1.3),
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1.0),
-                TemperatureTimeFactor(temperatureCelsius: 22, factor: 0.8),
-                TemperatureTimeFactor(temperatureCelsius: 24, factor: 0.6)
-            ]
-        ),
-        Paper(
-            id: "ilford-harman-direct-positive-fb",
-            manufacturer: "Ilford",
-            name: "HARMAN Direct Positive FB",
-            type: .fiberBased,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-rc-deluxe",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE RC Deluxe",
-            type: .resinCoated,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-rc-portfolio",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE RC Portfolio",
-            type: .resinCoated,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-rc-warmtone",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE RC Warmtone",
-            type: .resinCoated,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-rc-cooltone",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE RC Cooltone",
-            type: .resinCoated,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-fb-classic",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE FB Classic",
-            type: .fiberBased,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-fb-cooltone",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE FB Cooltone",
-            type: .fiberBased,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-fb-warmtone",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE FB Warmtone",
-            type: .fiberBased,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 60 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "ilford-multigrade-art-300",
-            manufacturer: "Ilford",
-            name: "MULTIGRADE ART 300",
-            type: .fiberBased,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 45 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        ),
-        Paper(
-            id: "kentmere-vc-select",
-            manufacturer: "Kentmere",
-            name: "VC Select",
-            type: .resinCoated,
-            availableSizes: IlfordCatalogSizes.sheets,
-            washRules: [
-                WashRule(minimumTemperatureCelsius: 5, duration: 2 * 60)
-            ],
-            developerTemperatureCurve: [
-                TemperatureTimeFactor(temperatureCelsius: 20, factor: 1)
-            ]
-        )
-    ]
-
-    public static let chemicals: [Chemical] = [
+    // MARK: - Foma (dish/tray, 20 °C)
+    static let foma: [Chemical] = [
         Chemical(
             id: "foma-fomatol-lqn",
             manufacturer: "Foma",
@@ -750,19 +424,22 @@ public enum MockDarkroomDatabase {
                     ]
                 ),
                 // Strojní zpracování 1+4. Datasheet neuvádí zvlášť časy pro strojní
-                // proces – přebíráme ruční doby (bezpečně na straně delšího ustálení).
+                // proces – přebíráme ruční doby (bezpečně na straně delšího ustálení),
+                // proto jsou označené jako odhad.
                 ChemicalDilution(
                     ratio: "1+4",
                     timeRules: [
                         ProcessingTimeRule(
                             paperType: .fiberBased,
                             temperatureCelsius: 20,
-                            timeRange: TimeRange(seconds: 180)
+                            timeRange: TimeRange(seconds: 180),
+                            isEstimated: true
                         ),
                         ProcessingTimeRule(
                             paperType: .resinCoated,
                             temperatureCelsius: 20,
-                            timeRange: TimeRange(seconds: 90)
+                            timeRange: TimeRange(seconds: 90),
+                            isEstimated: true
                         )
                     ],
                     capacityRules: [
@@ -810,7 +487,8 @@ public enum MockDarkroomDatabase {
                 // Dvoulázňový sulfidický tónovač (bělící roztok A + tónovací roztok B),
                 // obě složky se ředí 1+9. Doba tónování se řídí opticky (dokud nejsou
                 // vytónovány i nejtmavší partie), proto nemá pevný čas z datasheetu.
-                // Vydatnost: cca 5 m² z jedné soupravy bez ohledu na podložku.
+                // Vydatnost datasheetu: 5 m² z 5 l pracovního roztoku, tj. 1,0 m²/l
+                // bez ohledu na podložku – s objemem se tedy škáluje.
                 ChemicalDilution(
                     ratio: "1+9",
                     timeRules: [],
@@ -821,10 +499,11 @@ public enum MockDarkroomDatabase {
                 )
             ]
         ),
+    ]
 
-        // MARK: - Ilford / HARMAN (dish/tray, 20 °C)
-        // Kapacity přepočtené z 8×10" (0,051562 m²) na m²/L.
-
+    // MARK: - Ilford / HARMAN (dish/tray, 20 °C)
+    // Capacities converted from sheets of 8×10" (0.051562 m²) to m²/L.
+    static let ilford: [Chemical] = [
         Chemical(
             id: "ilford-multigrade",
             manufacturer: "Ilford",
@@ -849,7 +528,8 @@ public enum MockDarkroomDatabase {
                             temperatureCelsius: 20,
                             timeRange: TimeRange(minimum: 90, maximum: 180)
                         ),
-                        // RC Cooltone – cca 2× čas pro nejchladnější tón (developers TDS)
+                        // RC Cooltone: paper developers TDS – „approximately double these
+                        // times … to obtain the coolest image colour“.
                         ProcessingTimeRule(
                             paperID: "ilford-multigrade-rc-cooltone",
                             temperatureCelsius: 20,
@@ -858,6 +538,13 @@ public enum MockDarkroomDatabase {
                     ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 5.2),
+                        // „Approximately half these capacities … if only MULTIGRADE RC COOLTONE
+                        // is processed“ (delší vyvolávání).
+                        ChemicalCapacityRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            paperType: .resinCoated,
+                            squareMetersPerLiter: 2.6
+                        ),
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.6)
                     ]
                 ),
@@ -887,6 +574,11 @@ public enum MockDarkroomDatabase {
                     ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        ChemicalCapacityRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            paperType: .resinCoated,
+                            squareMetersPerLiter: 1.8
+                        ),
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
                     ]
                 )
@@ -924,6 +616,13 @@ public enum MockDarkroomDatabase {
                     ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        // „Approximately half these capacities … if only MULTIGRADE RC COOLTONE
+                        // is processed“ (delší vyvolávání).
+                        ChemicalCapacityRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            paperType: .resinCoated,
+                            squareMetersPerLiter: 1.8
+                        ),
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.3)
                     ]
                 )
@@ -956,6 +655,13 @@ public enum MockDarkroomDatabase {
                     ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 3.6),
+                        // „Approximately half these capacities … if only MULTIGRADE RC COOLTONE
+                        // is processed“ (delší vyvolávání).
+                        ChemicalCapacityRule(
+                            paperID: "ilford-multigrade-rc-cooltone",
+                            paperType: .resinCoated,
+                            squareMetersPerLiter: 1.8
+                        ),
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.3)
                     ]
                 )
@@ -1036,7 +742,7 @@ public enum MockDarkroomDatabase {
                     ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.6),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 4.6)
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.3)
                     ]
                 )
             ]
@@ -1062,8 +768,8 @@ public enum MockDarkroomDatabase {
                         )
                     ],
                     capacityRules: [
-                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.0),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.0)
                     ]
                 ),
                 ChemicalDilution(
@@ -1081,8 +787,8 @@ public enum MockDarkroomDatabase {
                         )
                     ],
                     capacityRules: [
-                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.0),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.0)
                     ]
                 )
             ]
@@ -1108,8 +814,8 @@ public enum MockDarkroomDatabase {
                         )
                     ],
                     capacityRules: [
-                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.0),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.0)
                     ]
                 ),
                 ChemicalDilution(
@@ -1127,8 +833,8 @@ public enum MockDarkroomDatabase {
                         )
                     ],
                     capacityRules: [
-                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.0),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.0)
                     ]
                 )
             ]
@@ -1154,14 +860,16 @@ public enum MockDarkroomDatabase {
                         )
                     ],
                     capacityRules: [
-                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.1),
-                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.1)
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 4.0),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 2.0)
                     ]
                 )
             ]
         ),
+    ]
 
-        // MARK: - Kentmere (dish/tray, 20 °C)
+    // MARK: - Kentmere (dish/tray, 20 °C)
+    static let kentmere: [Chemical] = [
         Chemical(
             id: "kentmere-paper-developer",
             manufacturer: "Kentmere",
@@ -1242,18 +950,22 @@ public enum MockDarkroomDatabase {
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.8)
                     ]
                 ),
+                // Datasheet u 1+4 uvádí jen vydatnost a to, že se čas zkracuje,
+                // konkrétní doby ne – proto odhad.
                 ChemicalDilution(
                     ratio: "1+4",
                     timeRules: [
                         ProcessingTimeRule(
                             paperType: .resinCoated,
                             temperatureCelsius: 20,
-                            timeRange: TimeRange(seconds: 90)
+                            timeRange: TimeRange(seconds: 90),
+                            isEstimated: true
                         ),
                         ProcessingTimeRule(
                             paperType: .fiberBased,
                             temperatureCelsius: 20,
-                            timeRange: TimeRange(seconds: 180)
+                            timeRange: TimeRange(seconds: 180),
+                            isEstimated: true
                         )
                     ],
                     capacityRules: [
@@ -1264,61 +976,4 @@ public enum MockDarkroomDatabase {
             ]
         )
     ]
-
-    public static var manufacturers: [String] {
-        Array(
-            Set(papers.map(\.manufacturer) + chemicals.map(\.manufacturer))
-        ).sorted()
-    }
-
-    public static var paperManufacturers: [String] {
-        Array(Set(papers.map(\.manufacturer))).sorted()
-    }
-
-    public static var developers: [Chemical] {
-        chemicals.filter { $0.role == .developer }
-    }
-
-    public static var stopBaths: [Chemical] {
-        chemicals.filter { $0.role == .stopBath }
-    }
-
-    public static var fixers: [Chemical] {
-        chemicals.filter { $0.role == .fixer }
-    }
-
-    public static var toners: [Chemical] {
-        chemicals.filter { $0.role == .toner }
-    }
-
-    public static var defaultSession: DevelopmentSession {
-        let paper = papers[0]
-        let developer = developers[0]
-        let stopBath = stopBaths[0]
-        let fixer = fixers[0]
-
-        return DevelopmentSession(
-            paper: paper,
-            paperSize: paper.availableSizes[3],
-            developer: developer,
-            developerDilution: developer.dilutions[0],
-            stopBath: stopBath,
-            stopBathDilution: stopBath.dilutions[0],
-            fixer: fixer,
-            fixerDilution: fixer.dilutions[0],
-            developerTemperatureCelsius: 20,
-            stopBathTemperatureCelsius: 20,
-            fixerTemperatureCelsius: 20
-        )
-    }
-
-    @MainActor
-    public static var configuredDefaultSession: DevelopmentSession {
-        var session = defaultSession
-        let transfer = TimeInterval(DarkroomSettingsStore.shared.defaultTransferSeconds)
-        session.transferAfterDeveloperDuration = transfer
-        session.transferAfterStopBathDuration = transfer
-        session.transferAfterFixerDuration = transfer
-        return session
-    }
 }

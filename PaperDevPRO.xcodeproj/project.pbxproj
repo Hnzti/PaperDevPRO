@@ -10,7 +10,10 @@
 		AA0000000000000000000001 /* PaperDevPROApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* PaperDevPROApp.swift */; };
 		AA0000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* ContentView.swift */; };
 		AA0000000000000000000003 /* DarkroomModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000013 /* DarkroomModels.swift */; };
-		AA0000000000000000000004 /* MockDarkroomDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* MockDarkroomDatabase.swift */; };
+		AA0000000000000000000004 /* PaperCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* PaperCatalog.swift */; };
+		AA000000000000000000000F /* ChemicalCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001F /* ChemicalCatalog.swift */; };
+		AA0000000000000000000100 /* DarkroomCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* DarkroomCatalog.swift */; };
+		AA0000000000000000000101 /* RunCompletionNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000111 /* RunCompletionNotifier.swift */; };
 		AA0000000000000000000005 /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* TimerViewModel.swift */; };
 		AA0000000000000000000006 /* DarkroomTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* DarkroomTimerView.swift */; };
 		AA0000000000000000000007 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000017 /* SetupView.swift */; };
@@ -21,6 +24,10 @@
 		AA000000000000000000000C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001C /* Assets.xcassets */; };
 		AA000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001D /* PrivacyInfo.xcprivacy */; };
 		AA000000000000000000000E /* Localizations.json in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001E /* Localizations.json */; };
+		AA0000000000000000000102 /* DarkroomCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000112 /* DarkroomCatalogTests.swift */; };
+		AA0000000000000000000103 /* DarkroomModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000113 /* DarkroomModelTests.swift */; };
+		AA0000000000000000000104 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000114 /* LocalizationTests.swift */; };
+		AA0000000000000000000105 /* TimerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000115 /* TimerViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,7 +35,15 @@
 		AA0000000000000000000011 /* PaperDevPROApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperDevPROApp.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* DarkroomModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomModels.swift; sourceTree = "<group>"; };
-		AA0000000000000000000014 /* MockDarkroomDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDarkroomDatabase.swift; sourceTree = "<group>"; };
+		AA0000000000000000000014 /* PaperCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperCatalog.swift; sourceTree = "<group>"; };
+		AA000000000000000000001F /* ChemicalCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChemicalCatalog.swift; sourceTree = "<group>"; };
+		AA0000000000000000000110 /* DarkroomCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomCatalog.swift; sourceTree = "<group>"; };
+		AA0000000000000000000111 /* RunCompletionNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunCompletionNotifier.swift; sourceTree = "<group>"; };
+		AA0000000000000000000112 /* DarkroomCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomCatalogTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000113 /* DarkroomModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomModelTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000114 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000115 /* TimerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModelTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000116 /* PaperDevTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperDevTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000015 /* TimerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* DarkroomTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkroomTimerView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000017 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -49,6 +64,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000053 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -56,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000031 /* PaperDevPRO */,
+				AA0000000000000000000037 /* PaperDevTests */,
 				AA0000000000000000000036 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -80,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000013 /* DarkroomModels.swift */,
+				AA0000000000000000000111 /* RunCompletionNotifier.swift */,
 				AA0000000000000000000018 /* ChemicalUsageStore.swift */,
 				AA0000000000000000000019 /* PresetStore.swift */,
 				AA000000000000000000001A /* DarkroomSettingsStore.swift */,
@@ -91,7 +115,9 @@
 		AA0000000000000000000033 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000014 /* MockDarkroomDatabase.swift */,
+				AA0000000000000000000014 /* PaperCatalog.swift */,
+				AA000000000000000000001F /* ChemicalCatalog.swift */,
+				AA0000000000000000000110 /* DarkroomCatalog.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -117,8 +143,20 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000010 /* PaperDev.app */,
+				AA0000000000000000000116 /* PaperDevTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000037 /* PaperDevTests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000112 /* DarkroomCatalogTests.swift */,
+				AA0000000000000000000113 /* DarkroomModelTests.swift */,
+				AA0000000000000000000114 /* LocalizationTests.swift */,
+				AA0000000000000000000115 /* TimerViewModelTests.swift */,
+			);
+			path = PaperDevTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -141,7 +179,42 @@
 			productReference = AA0000000000000000000010 /* PaperDev.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA0000000000000000000041 /* PaperDevTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000071 /* Build configuration list for PBXNativeTarget "PaperDevTests" */;
+			buildPhases = (
+				AA0000000000000000000052 /* Sources */,
+				AA0000000000000000000053 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000091 /* PBXTargetDependency */,
+			);
+			name = PaperDevTests;
+			productName = PaperDevTests;
+			productReference = AA0000000000000000000116 /* PaperDevTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000090 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000060 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000040;
+			remoteInfo = PaperDev;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		AA0000000000000000000091 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000040 /* PaperDev */;
+			targetProxy = AA0000000000000000000090 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		AA0000000000000000000060 /* Project object */ = {
@@ -170,6 +243,7 @@
 			projectRoot = "";
 			targets = (
 				AA0000000000000000000040 /* PaperDev */,
+				AA0000000000000000000041 /* PaperDevTests */,
 			);
 		};
 /* End PBXProject section */
@@ -195,7 +269,10 @@
 				AA0000000000000000000001 /* PaperDevPROApp.swift in Sources */,
 				AA0000000000000000000002 /* ContentView.swift in Sources */,
 				AA0000000000000000000003 /* DarkroomModels.swift in Sources */,
-				AA0000000000000000000004 /* MockDarkroomDatabase.swift in Sources */,
+				AA0000000000000000000004 /* PaperCatalog.swift in Sources */,
+				AA000000000000000000000F /* ChemicalCatalog.swift in Sources */,
+				AA0000000000000000000100 /* DarkroomCatalog.swift in Sources */,
+				AA0000000000000000000101 /* RunCompletionNotifier.swift in Sources */,
 				AA0000000000000000000005 /* TimerViewModel.swift in Sources */,
 				AA0000000000000000000006 /* DarkroomTimerView.swift in Sources */,
 				AA0000000000000000000007 /* SetupView.swift in Sources */,
@@ -203,6 +280,17 @@
 				AA0000000000000000000009 /* PresetStore.swift in Sources */,
 				AA000000000000000000000A /* DarkroomSettingsStore.swift in Sources */,
 				AA000000000000000000000B /* AppCopy.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000052 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000102 /* DarkroomCatalogTests.swift in Sources */,
+				AA0000000000000000000103 /* DarkroomModelTests.swift in Sources */,
+				AA0000000000000000000104 /* LocalizationTests.swift in Sources */,
+				AA0000000000000000000105 /* TimerViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,7 +441,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -387,8 +475,48 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AA0000000000000000000084 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = H7M39C5AJ3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PaperDev.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PaperDev";
+			};
+			name = Debug;
+		};
+		AA0000000000000000000085 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = H7M39C5AJ3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jankalina.PaperDevTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PaperDev.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PaperDev";
 			};
 			name = Release;
 		};
@@ -409,6 +537,15 @@
 			buildConfigurations = (
 				AA0000000000000000000082 /* Debug */,
 				AA0000000000000000000083 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000071 /* Build configuration list for PBXNativeTarget "PaperDevTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000084 /* Debug */,
+				AA0000000000000000000085 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

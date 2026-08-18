@@ -20,14 +20,11 @@ public struct DarkroomTimerView: View {
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var navigationPath: [SetupRoute] = []
     @State private var pendingDeleteRunID: UUID?
+    @Environment(\.scenePhase) private var scenePhase
 
     public init(session: DevelopmentSession? = nil) {
-        let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
+        let resolvedSession = session ?? DarkroomCatalog.configuredDefaultSession
         _viewModel = StateObject(wrappedValue: TimerViewModel(session: resolvedSession))
-    }
-
-    public init(viewModel: TimerViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     private var copy: AppCopy { settingsStore.copy }
@@ -39,9 +36,21 @@ public struct DarkroomTimerView: View {
                     destinationView(for: route)
                         .navigationBarBackButtonHidden(true)
                         .toolbar(.hidden, for: .navigationBar)
+                        .background(swipeBackEnabler)
                 }
         }
         .tint(DarkroomPalette.red)
+    }
+
+    @ViewBuilder
+    private var swipeBackEnabler: some View {
+        #if canImport(UIKit)
+        InteractivePopGestureEnabler()
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+        #else
+        EmptyView()
+        #endif
     }
 
     @ViewBuilder
@@ -96,7 +105,7 @@ public struct DarkroomTimerView: View {
                         Spacer(minLength: 0)
 
                         VStack(spacing: 12) {
-                            Text("PaperDeveloper")
+                            Text(AppInfo.displayName)
                                 .font(.system(size: 34, weight: .bold))
                                 .foregroundStyle(DarkroomPalette.red)
 
@@ -108,7 +117,7 @@ public struct DarkroomTimerView: View {
                                 .padding(.horizontal, 8)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("PaperDeveloper. \(copy.safelightWarning)")
+                        .accessibilityLabel("\(AppInfo.displayName). \(copy.safelightWarning)")
 
                         Spacer(minLength: 0)
                     }
@@ -133,6 +142,16 @@ public struct DarkroomTimerView: View {
         }
         .onChange(of: settingsStore.keepScreenOn) { _, _ in
             settingsStore.applyKeepScreenOn()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                viewModel.applicationDidBecomeActive()
+            case .background, .inactive:
+                viewModel.applicationDidEnterBackground()
+            @unknown default:
+                break
+            }
         }
     }
 
@@ -371,11 +390,11 @@ public struct DarkroomTimerView: View {
             Button {
                 viewModel.startOrPause()
             } label: {
-                controlButtonLabel(startPauseTitle, isDisabled: !viewModel.hasRuns)
+                controlButtonLabel(startPauseTitle, isDisabled: viewModel.isStartPauseDisabled)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(startPauseTitle)
-            .disabled(!viewModel.hasRuns)
+            .disabled(viewModel.isStartPauseDisabled)
         }
         .padding(.horizontal, 6)
     }
@@ -472,16 +491,47 @@ public struct DarkroomTimerView: View {
 }
 
 #if canImport(UIKit)
-/// Umožní „swipe zleva doprava" (interaktivní pop) i když je systémový
-/// navigation bar skrytý – stejné chování jako v systémové aplikaci Nastavení.
-extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
-    override open func viewDidLoad() {
-        super.viewDidLoad()
-        interactivePopGestureRecognizer?.delegate = self
+/// Umožní „swipe zleva doprava" (interaktivní pop) i když je systémový navigation bar
+/// skrytý. Dřív to řešila kategorie nad `UINavigationController`, která přepisovala
+/// `viewDidLoad` a měnila delegáta gesta globálně pro celou aplikaci; tady se to týká
+/// jen navigation controlleru, ve kterém je vložená tato jedna obrazovka.
+struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        GestureAttachingController(coordinator: context.coordinator)
     }
 
-    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        viewControllers.count > 1
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        weak var navigationController: UINavigationController?
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            (navigationController?.viewControllers.count ?? 0) > 1
+        }
+    }
+
+    private final class GestureAttachingController: UIViewController {
+        private let coordinator: Coordinator
+
+        init(coordinator: Coordinator) {
+            self.coordinator = coordinator
+            super.init(nibName: nil, bundle: nil)
+            view.isUserInteractionEnabled = false
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+
+            guard let navigationController = parent?.navigationController else { return }
+            coordinator.navigationController = navigationController
+            navigationController.interactivePopGestureRecognizer?.isEnabled = true
+            navigationController.interactivePopGestureRecognizer?.delegate = coordinator
+        }
     }
 }
 #endif

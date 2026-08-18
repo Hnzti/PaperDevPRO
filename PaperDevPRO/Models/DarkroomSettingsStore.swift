@@ -12,10 +12,24 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    func displayName(language: AppLanguage) -> String {
+    var displayName: String {
         switch self {
         case .celsius: return "°C"
         case .fahrenheit: return "°F"
+        }
+    }
+}
+
+enum UnitSystem: String, CaseIterable, Identifiable {
+    case metric
+    case imperial
+
+    var id: String { rawValue }
+
+    func displayName(copy: AppCopy) -> String {
+        switch self {
+        case .metric: return copy.unitSystemMetric
+        case .imperial: return copy.unitSystemImperial
         }
     }
 }
@@ -63,6 +77,10 @@ final class DarkroomSettingsStore: ObservableObject {
         didSet { defaults.set(temperatureUnit.rawValue, forKey: Keys.temperatureUnit) }
     }
 
+    @Published var unitSystem: UnitSystem {
+        didSet { defaults.set(unitSystem.rawValue, forKey: Keys.unitSystem) }
+    }
+
     @Published var language: AppLanguage {
         didSet {
             if language.isTemporarilyBlocked {
@@ -76,7 +94,18 @@ final class DarkroomSettingsStore: ObservableObject {
     var copy: AppCopy { AppCopy(language: language) }
 
     private let defaults: UserDefaults
-    private var storedSystemBrightness: CGFloat?
+
+    /// Persisted: when the app is force-quit while dimmed, iOS keeps the dark screen
+    /// and the next launch has to know what to restore.
+    private var storedSystemBrightness: CGFloat? {
+        didSet {
+            if let storedSystemBrightness {
+                defaults.set(Double(storedSystemBrightness), forKey: Keys.systemBrightness)
+            } else {
+                defaults.removeObject(forKey: Keys.systemBrightness)
+            }
+        }
+    }
 
     private enum Keys {
         static let sound = "settings.soundEnabled"
@@ -84,8 +113,10 @@ final class DarkroomSettingsStore: ObservableObject {
         static let keepScreenOn = "settings.keepScreenOn"
         static let brightnessEnabled = "settings.darkroomBrightnessEnabled"
         static let brightness = "settings.darkroomBrightness"
+        static let systemBrightness = "settings.systemBrightnessBackup"
         static let transferSeconds = "settings.defaultTransferSeconds"
         static let temperatureUnit = "settings.temperatureUnit"
+        static let unitSystem = "settings.unitSystem"
         static let language = "settings.language"
     }
 
@@ -106,14 +137,24 @@ final class DarkroomSettingsStore: ObservableObject {
         if let unit = defaults.string(forKey: Keys.temperatureUnit).flatMap(TemperatureUnit.init(rawValue:)) {
             self.temperatureUnit = unit
         } else {
-            self.temperatureUnit = .celsius
+            self.temperatureUnit = Locale.current.measurementSystem == .us ? .fahrenheit : .celsius
+        }
+
+        if let system = defaults.string(forKey: Keys.unitSystem).flatMap(UnitSystem.init(rawValue:)) {
+            self.unitSystem = system
+        } else {
+            self.unitSystem = Locale.current.measurementSystem == .metric ? .metric : .imperial
         }
 
         if let language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)),
            !language.isTemporarilyBlocked {
             self.language = language
         } else {
-            self.language = .english
+            self.language = AppLanguage.preferredFromSystem()
+        }
+
+        if let backup = defaults.object(forKey: Keys.systemBrightness) as? Double {
+            self.storedSystemBrightness = CGFloat(backup)
         }
     }
 
@@ -182,6 +223,60 @@ final class DarkroomSettingsStore: ObservableObject {
             return celsius
         case .fahrenheit:
             return celsius * 9 / 5 + 32
+        }
+    }
+
+    /// Celsius values for a temperature wheel so that the *displayed* numbers are whole.
+    /// In Fahrenheit mode the wheel steps by 1 °F; documented temperatures are always
+    /// kept in the list, otherwise the datasheet seal would become unreachable.
+    func temperaturePickerValues(
+        celsius candidates: [Double],
+        documented: [Double] = []
+    ) -> [Double] {
+        guard temperatureUnit == .fahrenheit,
+              let minimum = candidates.min(),
+              let maximum = candidates.max() else {
+            return candidates
+        }
+
+        let lowerFahrenheit = Int(displayedTemperature(fromCelsius: minimum).rounded(.up))
+        let upperFahrenheit = Int(displayedTemperature(fromCelsius: maximum).rounded(.down))
+        guard lowerFahrenheit <= upperFahrenheit else { return candidates }
+
+        let fromFahrenheit = (lowerFahrenheit...upperFahrenheit)
+            .map { celsius(fromDisplayed: Double($0)) }
+
+        let documentedInRange = documented.filter { $0 >= minimum && $0 <= maximum }
+
+        var seen = Set<Int>()
+        return (fromFahrenheit + documentedInRange)
+            .sorted()
+            .filter { seen.insert(Int(($0 * 100).rounded())).inserted }
+    }
+
+    func formatLength(centimeters: Double) -> String {
+        switch unitSystem {
+        case .metric:
+            return "\(centimeters.formatted(.number.precision(.fractionLength(0...1)))) cm"
+        case .imperial:
+            let inches = centimeters / 2.54
+            return "\(inches.formatted(.number.precision(.fractionLength(0...1)))) in"
+        }
+    }
+
+    func formatSize(_ size: PaperSize) -> String {
+        switch unitSystem {
+        case .metric:
+            return size.displayName
+        case .imperial:
+            return size.displayNameInches
+        }
+    }
+
+    var lengthUnitLabel: String {
+        switch unitSystem {
+        case .metric: return copy.centimetersUnit
+        case .imperial: return copy.inchesUnit
         }
     }
 }

@@ -40,21 +40,51 @@ final class PresetStore: ObservableObject {
     @Published private(set) var presets: [DevelopmentPreset]
 
     private let userDefaultsKey = "developmentPresets"
+    private let backupKey = "developmentPresets.unreadableBackup"
     private let defaults: UserDefaults
 
     private init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
-        guard let data = defaults.data(forKey: userDefaultsKey),
-              let decoded = try? JSONDecoder().decode([DevelopmentPreset].self, from: data) else {
+        guard let data = defaults.data(forKey: userDefaultsKey) else {
             self.presets = []
             return
         }
 
-        // Ponecháme jen sloty Preset A–Z (staré volné názvy zahodíme).
+        let decoded = Self.decode(data)
+
+        if decoded.isEmpty, !data.isEmpty {
+            // Nothing survived decoding – keep the raw payload so a future migration
+            // can still recover it instead of the user silently losing every preset.
+            defaults.set(data, forKey: backupKey)
+        }
+
+        // Ponecháme jen sloty Preset A–Z (staré volné názvy zahodíme) a přepojíme
+        // je na aktuální katalog, aby se opravy datasheetů dostaly i do presetů.
         self.presets = decoded
             .filter { $0.letter != nil }
+            .map { preset in
+                var refreshed = preset
+                refreshed.session = DarkroomCatalog.refreshed(preset.session)
+                return refreshed
+            }
             .sorted { ($0.letter ?? "") < ($1.letter ?? "") }
+    }
+
+    /// Decodes preset by preset. One preset saved by a newer build (or a corrupted
+    /// record) used to clear the whole list.
+    private static func decode(_ data: Data) -> [DevelopmentPreset] {
+        let decoder = JSONDecoder()
+
+        if let decoded = try? decoder.decode([DevelopmentPreset].self, from: data) {
+            return decoded
+        }
+
+        guard let lossy = try? decoder.decode([LossyDecoded<DevelopmentPreset>].self, from: data) else {
+            return []
+        }
+
+        return lossy.compactMap(\.value)
     }
 
     func preset(forLetter letter: String) -> DevelopmentPreset? {

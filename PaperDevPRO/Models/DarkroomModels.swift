@@ -1,22 +1,13 @@
 import Foundation
 
-public enum PaperType: String, CaseIterable, Codable, Hashable, Identifiable {
+public enum PaperType: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case resinCoated = "RC"
     case fiberBased = "FB"
 
     public var id: String { rawValue }
-
-    public var displayName: String {
-        switch self {
-        case .resinCoated:
-            return "Resin Coated"
-        case .fiberBased:
-            return "Fiber Based / Baryta"
-        }
-    }
 }
 
-public struct Paper: Identifiable, Codable, Hashable {
+public struct Paper: Identifiable, Codable, Hashable, Sendable {
     public let id: String
     public let manufacturer: String
     public let name: String
@@ -48,15 +39,18 @@ public struct Paper: Identifiable, Codable, Hashable {
     }
 
     public func washDuration(for waterTemperatureCelsius: Double) -> TimeInterval {
-        washRules
-            .first { $0.matches(temperatureCelsius: waterTemperatureCelsius) }?
-            .duration ?? 0
+        if let rule = washRules.first(where: { $0.matches(temperatureCelsius: waterTemperatureCelsius) }) {
+            return rule.duration
+        }
+
+        // Colder than any documented rule: washing only gets slower, never faster,
+        // so fall back to the longest documented time instead of reporting 0 s.
+        return washRules.map(\.duration).max() ?? 0
     }
 
     public func developerTemperatureFactor(for temperatureCelsius: Double) -> Double {
-        guard let first = developerTemperatureCurve.first else { return 1 }
-
         let sortedCurve = developerTemperatureCurve.sorted { $0.temperatureCelsius < $1.temperatureCelsius }
+        guard let first = sortedCurve.first else { return 1 }
 
         if temperatureCelsius <= first.temperatureCelsius {
             let temperatureDelta = first.temperatureCelsius - temperatureCelsius
@@ -77,16 +71,27 @@ public struct Paper: Identifiable, Codable, Hashable {
     }
 }
 
-public struct PaperSize: Identifiable, Codable, Hashable {
+public struct PaperSize: Identifiable, Codable, Hashable, Sendable {
     public let widthCentimeters: Double
     public let heightCentimeters: Double
 
+    /// Identity in tenths of a millimetre. Interpolating the raw `Double`s used to
+    /// produce ids like `7.619999999999999x25.4`, so two sizes that are the same
+    /// piece of paper (catalog value vs. value computed from inches) compared as
+    /// different and the picker lost its selection.
     public var id: String {
-        "\(widthCentimeters)x\(heightCentimeters)"
+        "\(tenthsOfMillimeter(widthCentimeters))x\(tenthsOfMillimeter(heightCentimeters))"
     }
 
     public var displayName: String {
         "\(formatted(widthCentimeters)) x \(formatted(heightCentimeters)) cm"
+    }
+
+    /// Same size expressed in inches, for the imperial unit setting.
+    public var displayNameInches: String {
+        let width = (widthCentimeters / 2.54).formatted(.number.precision(.fractionLength(0...1)))
+        let height = (heightCentimeters / 2.54).formatted(.number.precision(.fractionLength(0...1)))
+        return "\(width) x \(height) in"
     }
 
     public var areaSquareMeters: Double {
@@ -101,9 +106,13 @@ public struct PaperSize: Identifiable, Codable, Hashable {
     private func formatted(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)))
     }
+
+    private func tenthsOfMillimeter(_ centimeters: Double) -> Int {
+        Int((centimeters * 100).rounded())
+    }
 }
 
-public struct WashRule: Codable, Hashable {
+public struct WashRule: Codable, Hashable, Sendable {
     public let minimumTemperatureCelsius: Double?
     public let maximumTemperatureCelsius: Double?
     public let duration: TimeInterval
@@ -131,7 +140,7 @@ public struct WashRule: Codable, Hashable {
     }
 }
 
-public struct TemperatureTimeFactor: Codable, Hashable {
+public struct TemperatureTimeFactor: Codable, Hashable, Sendable {
     public let temperatureCelsius: Double
     public let factor: Double
 
@@ -141,7 +150,7 @@ public struct TemperatureTimeFactor: Codable, Hashable {
     }
 }
 
-public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable {
+public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case developer
     case transferToStopBath
     case stopBath
@@ -153,29 +162,18 @@ public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable 
 
     public var id: String { rawValue }
 
-    public var title: String {
+    /// Titles shown to the user come from `AppCopy.phaseTitle(_:)`, never from the model.
+    public var isTransfer: Bool {
         switch self {
-        case .developer:
-            return "Developer"
-        case .transferToStopBath:
-            return "Transfer to Stop Bath"
-        case .stopBath:
-            return "Stop Bath"
-        case .transferToFixer:
-            return "Transfer to Fixer"
-        case .fixer:
-            return "Fixer"
-        case .transferToWash:
-            return "Transfer to Wash"
-        case .wash:
-            return "Wash"
-        case .toning:
-            return "Toning"
+        case .transferToStopBath, .transferToFixer, .transferToWash:
+            return true
+        default:
+            return false
         }
     }
 }
 
-public enum ChemicalRole: String, Codable, Hashable {
+public enum ChemicalRole: String, Codable, Hashable, Sendable {
     case developer
     case stopBath
     case fixer
@@ -195,12 +193,21 @@ public enum ChemicalRole: String, Codable, Hashable {
     }
 }
 
-public struct ChemicalDilution: Identifiable, Codable, Hashable {
+public struct ChemicalDilution: Identifiable, Codable, Hashable, Sendable {
     public let ratio: String
     public let timeRules: [ProcessingTimeRule]
     public let capacityRules: [ChemicalCapacityRule]
 
     public var id: String { ratio }
+
+    /// Used when a chemical arrives without any dilution (corrupt preset, future data file).
+    public static let stock = ChemicalDilution(ratio: "stock")
+
+    /// Stable key for the usage ledger: `1 + 9`, `1+9` and `Stock` must not create
+    /// three separate histories for the same bath.
+    public var normalizedRatio: String {
+        ratio.lowercased().replacingOccurrences(of: " ", with: "")
+    }
 
     public init(
         ratio: String,
@@ -213,7 +220,7 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
     }
 
     public func availableTemperatures(for paper: Paper, chemicalManufacturer: String) -> [Double] {
-        let temperatures = matchingRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+        let temperatures = rules(for: paper, chemicalManufacturer: chemicalManufacturer)
             .map(\.temperatureCelsius)
         let uniqueTemperatures = Array(Set(temperatures)).sorted()
 
@@ -230,6 +237,13 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
     /// (podle `paperID`, jinak podle typu RC/FB u stejné značky). Nezohledňuje teplotu.
     public func isDocumented(for paper: Paper, chemicalManufacturer: String) -> Bool {
         !documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer).isEmpty
+    }
+
+    /// True když pro papír máme použitelné pravidlo – i když je to jen výrobcem
+    /// doporučený odhad (`isEstimated`). Rozhoduje o tom, co se nabídne v pickeru;
+    /// o pečeť vs. vykřičník rozhoduje `isDocumented`.
+    public func isApplicable(for paper: Paper, chemicalManufacturer: String) -> Bool {
+        !applicableRules(for: paper, chemicalManufacturer: chemicalManufacturer).isEmpty
     }
 
     /// True jen když je zobrazený čas **přesně** z datasheetu pro daný papír
@@ -259,8 +273,7 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         temperatureCelsius: Double,
         chemicalManufacturer: String
     ) -> TimeRange {
-        let rules = matchingRules(for: paper, chemicalManufacturer: chemicalManufacturer)
-            .sorted { $0.temperatureCelsius < $1.temperatureCelsius }
+        let rules = rules(for: paper, chemicalManufacturer: chemicalManufacturer)
 
         if let exactRule = rules.first(where: { $0.temperatureCelsius == temperatureCelsius }) {
             return exactRule.timeRange
@@ -296,6 +309,8 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         )
     }
 
+    /// Zbývající vydatnost v procentech. Vydatnost je vždy plošná kapacita
+    /// **na litr** × objem roztoku, takže větší vana = víc papíru.
     public func capacityPercent(
         usages: [ChemicalUsageEntry],
         workingSolutionLiters: Double
@@ -307,7 +322,7 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         var usedFraction = 0.0
 
         for usage in usages {
-            guard let rule = capacityRule(for: usage.paperType) else {
+            guard let rule = capacityRule(for: usage) else {
                 continue
             }
 
@@ -352,13 +367,20 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         )
     }
 
-    private func capacityRule(for paperType: PaperType) -> ChemicalCapacityRule? {
-        capacityRules.first { $0.paperType == paperType }
+    /// Kapacita pro konkrétní papír: nejdřív pravidlo přímo pro `paperID`
+    /// (např. MG RC Cooltone má poloviční vydatnost vývojky), pak podle typu.
+    private func capacityRule(for usage: ChemicalUsageEntry) -> ChemicalCapacityRule? {
+        if let paperID = usage.paperID,
+           let rule = capacityRules.first(where: { $0.paperID == paperID }) {
+            return rule
+        }
+
+        return capacityRules.first { $0.paperID == nil && $0.paperType == usage.paperType }
     }
 
-    /// Pravidla, která jsou pro papír „oficiální“:
-    /// 1) explicitní `paperID`, jinak 2) `paperType` jen u **stejné značky**.
-    private func documentedRules(
+    /// Pravidla použitelná pro papír – i odhady (`isEstimated`):
+    /// 1) explicitní `paperID`, jinak 2) `paperType` jen u **stejné značky / rodiny**.
+    private func applicableRules(
         for paper: Paper,
         chemicalManufacturer: String
     ) -> [ProcessingTimeRule] {
@@ -374,66 +396,126 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable {
         return timeRules.filter { $0.paperID == nil && $0.paperType == paper.type }
     }
 
-    /// Pravidla použitá pro výpočet času: documented → jinak fallback na všechna
-    /// (interpolace / odhad bez záruky).
-    private func matchingRules(
+    /// Pravidla, která jsou pro papír „oficiální“ – bez odhadů. Jen tyto smí
+    /// zobrazit pečeť.
+    private func documentedRules(
         for paper: Paper,
         chemicalManufacturer: String
     ) -> [ProcessingTimeRule] {
-        let documented = documentedRules(for: paper, chemicalManufacturer: chemicalManufacturer)
-        if !documented.isEmpty {
-            return documented
+        applicableRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+            .filter { !$0.isEstimated }
+    }
+
+    /// Pravidla použitá pro výpočet času. Když pro kombinaci nic nemáme, bere se
+    /// nejbližší příbuzná sada (stejný typ papíru), a to v deterministickém pořadí –
+    /// dřív mohl výsledek záležet na pořadí v katalogu.
+    private func rules(
+        for paper: Paper,
+        chemicalManufacturer: String
+    ) -> [ProcessingTimeRule] {
+        let applicable = applicableRules(for: paper, chemicalManufacturer: chemicalManufacturer)
+        if !applicable.isEmpty {
+            return Self.deterministicallySorted(applicable)
         }
 
-        return timeRules
+        let sameTypeRules = timeRules.filter { $0.paperType == paper.type }
+        return Self.deterministicallySorted(sameTypeRules.isEmpty ? timeRules : sameTypeRules)
+    }
+
+    private static func deterministicallySorted(
+        _ rules: [ProcessingTimeRule]
+    ) -> [ProcessingTimeRule] {
+        rules.sorted { lhs, rhs in
+            if lhs.temperatureCelsius != rhs.temperatureCelsius {
+                return lhs.temperatureCelsius < rhs.temperatureCelsius
+            }
+            if lhs.timeRange.recommended != rhs.timeRange.recommended {
+                return lhs.timeRange.recommended < rhs.timeRange.recommended
+            }
+            return (lhs.paperID ?? "") < (rhs.paperID ?? "")
+        }
     }
 }
 
-public struct DilutionMix: Codable, Hashable {
+public struct DilutionMix: Codable, Hashable, Sendable {
     public let chemicalMilliliters: Int
     public let waterMilliliters: Int
 }
 
-public struct ChemicalCapacityRule: Codable, Hashable {
+public struct ChemicalCapacityRule: Codable, Hashable, Sendable {
+    /// Nepovinné zúžení na jeden papír (datasheet uvádí u některých papírů
+    /// odlišnou vydatnost než u zbytku typu).
+    public let paperID: String?
     public let paperType: PaperType
     public let squareMetersPerLiter: Double
 
-    public init(paperType: PaperType, squareMetersPerLiter: Double) {
+    public init(paperID: String? = nil, paperType: PaperType, squareMetersPerLiter: Double) {
+        self.paperID = paperID
         self.paperType = paperType
         self.squareMetersPerLiter = squareMetersPerLiter
     }
 }
 
-public struct ChemicalUsageEntry: Codable, Hashable {
+public struct ChemicalUsageEntry: Codable, Hashable, Sendable {
     public let paperType: PaperType
     public let areaSquareMeters: Double
+    /// Doplněno později; starší záznamy ho nemají a počítají se podle typu papíru.
+    public let paperID: String?
 
-    public init(paperType: PaperType, areaSquareMeters: Double) {
+    public init(paperType: PaperType, areaSquareMeters: Double, paperID: String? = nil) {
         self.paperType = paperType
         self.areaSquareMeters = areaSquareMeters
+        self.paperID = paperID
+    }
+
+    /// Stejný záznam s přepočtenou plochou – používá se při změně objemu roztoku.
+    public func scalingArea(by factor: Double) -> ChemicalUsageEntry {
+        ChemicalUsageEntry(
+            paperType: paperType,
+            areaSquareMeters: areaSquareMeters * factor,
+            paperID: paperID
+        )
     }
 }
 
-public struct ProcessingTimeRule: Codable, Hashable {
+public struct ProcessingTimeRule: Codable, Hashable, Sendable {
     public let paperID: String?
     public let paperType: PaperType?
     public let temperatureCelsius: Double
     public let timeRange: TimeRange
+    /// `true` = čas není v datasheetu, jen odvozený/odhadnutý. Používá se pro výpočet,
+    /// ale nikdy nesmí zobrazit pečeť „přesně dle dokumentace“.
+    public let isEstimated: Bool
 
     public init(
         paperID: String? = nil,
         paperType: PaperType? = nil,
         temperatureCelsius: Double,
-        timeRange: TimeRange
+        timeRange: TimeRange,
+        isEstimated: Bool = false
     ) {
         self.paperID = paperID
         self.paperType = paperType
         self.temperatureCelsius = temperatureCelsius
         self.timeRange = timeRange
+        self.isEstimated = isEstimated
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case paperID, paperType, temperatureCelsius, timeRange, isEstimated
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        paperID = try container.decodeIfPresent(String.self, forKey: .paperID)
+        paperType = try container.decodeIfPresent(PaperType.self, forKey: .paperType)
+        temperatureCelsius = try container.decode(Double.self, forKey: .temperatureCelsius)
+        timeRange = try container.decode(TimeRange.self, forKey: .timeRange)
+        isEstimated = try container.decodeIfPresent(Bool.self, forKey: .isEstimated) ?? false
     }
 }
 
-public struct TimeRange: Codable, Hashable {
+public struct TimeRange: Codable, Hashable, Sendable {
     public let minimum: TimeInterval
     public let maximum: TimeInterval
 
@@ -485,7 +567,7 @@ public struct TimeRange: Codable, Hashable {
     }
 }
 
-public struct Chemical: Identifiable, Codable, Hashable {
+public struct Chemical: Identifiable, Codable, Hashable, Sendable {
     public let id: String
     public let manufacturer: String
     public let name: String
@@ -516,9 +598,30 @@ public struct Chemical: Identifiable, Codable, Hashable {
         }
     }
 
+    /// True když pro papír existuje použitelný čas nebo vydatnost – včetně
+    /// výrobcem odvozených odhadů. Podle toho se chemie nabízí v pickeru.
+    public func isApplicable(for paper: Paper) -> Bool {
+        if dilutions.contains(where: {
+            $0.isApplicable(for: paper, chemicalManufacturer: manufacturer)
+        }) {
+            return true
+        }
+
+        guard role == .toner,
+              DarkroomBrandFamily.sharesDocumentation(manufacturer, paper.manufacturer) else {
+            return false
+        }
+
+        return dilutions.contains { dilution in
+            dilution.capacityRules.contains { $0.paperType == paper.type }
+        }
+    }
+
     public func preferredDilution(for paper: Paper) -> ChemicalDilution {
         dilutions.first { $0.isDocumented(for: paper, chemicalManufacturer: manufacturer) }
-            ?? dilutions[0]
+            ?? dilutions.first { $0.isApplicable(for: paper, chemicalManufacturer: manufacturer) }
+            ?? dilutions.first
+            ?? .stock
     }
 
     public init(
@@ -555,7 +658,7 @@ enum DarkroomBrandFamily {
     }
 }
 
-public struct TimedProcessPhase: Identifiable, Codable, Hashable {
+public struct TimedProcessPhase: Identifiable, Codable, Hashable, Sendable {
     public let phase: ProcessPhase
     public let duration: TimeInterval
 
@@ -567,7 +670,7 @@ public struct TimedProcessPhase: Identifiable, Codable, Hashable {
     }
 }
 
-public struct DevelopmentSession: Identifiable, Codable, Hashable {
+public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var paper: Paper
     public var paperSize: PaperSize
@@ -632,6 +735,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
         self.paperSize = paperSize
         self.testStripPaper = testStripPaper ?? paper
         self.testStripPaperSize = testStripPaperSize
+            ?? (testStripPaper ?? paper).availableSizes.first
             ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
         self.developer = developer
         self.developerDilution = developerDilution
@@ -687,6 +791,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable {
         paperSize = try container.decode(PaperSize.self, forKey: .paperSize)
         testStripPaper = try container.decodeIfPresent(Paper.self, forKey: .testStripPaper) ?? paper
         testStripPaperSize = try container.decodeIfPresent(PaperSize.self, forKey: .testStripPaperSize)
+            ?? testStripPaper.availableSizes.first
             ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
         developer = try container.decode(Chemical.self, forKey: .developer)
         developerDilution = try container.decode(ChemicalDilution.self, forKey: .developerDilution)

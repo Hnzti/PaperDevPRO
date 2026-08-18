@@ -47,6 +47,9 @@ struct SetupView: View {
     @State private var isStopBathUsageSynced = true
     @State private var isFixerUsageSynced = true
     @State private var phaseDurationOverrides: [ProcessPhase: Int]
+    /// Stable identity for `computedSession`. A fresh `UUID()` per evaluation made the
+    /// session compare unequal on every redraw, which broke `ForEach` and change tracking.
+    @State private var sessionID: UUID
     @State private var activePicker: SetupPicker?
     @State private var pickerBrandFilter: String = "Foma"
     @State private var pendingReset: ResetKind?
@@ -95,7 +98,7 @@ struct SetupView: View {
         _transferAfterFixerSeconds = State(initialValue: Int(initialSession.transferAfterFixerDuration.rounded()))
         _washTemperature = State(initialValue: initialSession.washTemperatureCelsius)
         _isToningEnabled = State(initialValue: initialSession.isToningEnabled)
-        let toner = initialSession.toner ?? MockDarkroomDatabase.toners.first ?? initialSession.fixer
+        let toner = initialSession.toner ?? DarkroomCatalog.toners.first ?? initialSession.fixer
         _selectedToner = State(initialValue: toner)
         _selectedTonerDilution = State(initialValue: initialSession.tonerDilution ?? toner.dilutions[0])
         _selectedTonerTemperature = State(initialValue: initialSession.toningTemperatureCelsius)
@@ -104,9 +107,14 @@ struct SetupView: View {
         _phaseDurationOverrides = State(
             initialValue: initialSession.phaseDurationOverrides.mapValues { Int($0.rounded()) }
         )
+        _sessionID = State(initialValue: initialSession.id)
     }
 
     var body: some View {
+        trackingStaleOverrides(trackingVolumeChanges(screen))
+    }
+
+    private var screen: some View {
         ZStack {
             DarkroomPalette.black
                 .ignoresSafeArea()
@@ -128,13 +136,13 @@ struct SetupView: View {
                     settingsSection(title: copy.sectionPaper) {
                         pickerRow(title: copy.rowPaperType, value: selectedPaper.displayName, picker: .paper)
                         divider
-                        pickerRow(title: copy.rowSize, value: selectedPaperSize.displayName, picker: .paperSize)
+                        pickerRow(title: copy.rowSize, value: sizeText(selectedPaperSize), picker: .paperSize)
                     }
 
                     settingsSection(title: copy.sectionTestStripPaper) {
                         pickerRow(title: copy.rowPaperType, value: selectedTestStripPaper.displayName, picker: .testStripPaper)
                         divider
-                        pickerRow(title: copy.rowSize, value: selectedTestStripPaperSize.displayName, picker: .testStripPaperSize)
+                        pickerRow(title: copy.rowSize, value: sizeText(selectedTestStripPaperSize), picker: .testStripPaperSize)
                     }
 
                     settingsSection(title: copy.sectionDeveloper) {
@@ -311,14 +319,15 @@ struct SetupView: View {
                     }
 
                     settingsSection(title: copy.sectionProcess) {
-                        ForEach(Array(computedSession.resolvedPhases().enumerated()), id: \.element.id) { index, phase in
+                        let phases = computedSession.resolvedPhases()
+                        ForEach(Array(phases.enumerated()), id: \.element.id) { index, phase in
                             pickerRow(
                                 title: displayTitle(for: phase.phase),
                                 value: durationText(for: phase.duration),
                                 picker: processPicker(for: phase.phase)
                             )
 
-                            if index < computedSession.resolvedPhases().count - 1 {
+                            if index < phases.count - 1 {
                                 divider
                             }
                         }
@@ -337,10 +346,12 @@ struct SetupView: View {
         .statusBar(hidden: true)
         .onAppear {
             isNavigatingToSettings = false
+            registerCurrentVolumes()
         }
-        .onDisappear {
-            guard !isNavigatingToSettings, !isResettingProject else { return }
-            onApply(computedSession)
+        // Every change lands in the running project immediately – no need to leave setup.
+        .onChange(of: computedSession) { _, session in
+            guard !isResettingProject else { return }
+            onApply(session)
         }
         .sheet(item: $activePicker) { picker in
             pickerSheet(for: picker)
@@ -357,6 +368,42 @@ struct SetupView: View {
                         .background(DarkroomPalette.black)
                 }
         }
+    }
+
+    /// Topping a bath up revives it, so the usage ledger has to learn about the new volume.
+    private func trackingVolumeChanges<Content: View>(_ content: Content) -> some View {
+        content
+            .onChange(of: developerVolumeMilliliters) { _, milliliters in
+                registerVolume(milliliters, chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+            }
+            .onChange(of: stopBathVolumeMilliliters) { _, milliliters in
+                registerVolume(milliliters, chemical: selectedStopBath, dilution: selectedStopBathDilution)
+            }
+            .onChange(of: fixerVolumeMilliliters) { _, milliliters in
+                registerVolume(milliliters, chemical: selectedFixer, dilution: selectedFixerDilution)
+            }
+            .onChange(of: tonerVolumeMilliliters) { _, milliliters in
+                registerVolume(milliliters, chemical: selectedToner, dilution: selectedTonerDilution)
+            }
+    }
+
+    /// A manual time belongs to one combination of paper + chemistry + temperature.
+    /// Once any of those changes the override is stale, so it is dropped.
+    private func trackingStaleOverrides<Content: View>(_ content: Content) -> some View {
+        content
+            .onChange(of: selectedPaper) { _, _ in phaseDurationOverrides.removeAll() }
+            .onChange(of: selectedDeveloper) { _, _ in phaseDurationOverrides[.developer] = nil }
+            .onChange(of: selectedDeveloperDilution) { _, _ in phaseDurationOverrides[.developer] = nil }
+            .onChange(of: selectedDeveloperTemperature) { _, _ in phaseDurationOverrides[.developer] = nil }
+            .onChange(of: selectedStopBath) { _, _ in phaseDurationOverrides[.stopBath] = nil }
+            .onChange(of: selectedStopBathDilution) { _, _ in phaseDurationOverrides[.stopBath] = nil }
+            .onChange(of: selectedStopBathTemperature) { _, _ in phaseDurationOverrides[.stopBath] = nil }
+            .onChange(of: selectedFixer) { _, _ in phaseDurationOverrides[.fixer] = nil }
+            .onChange(of: selectedFixerDilution) { _, _ in phaseDurationOverrides[.fixer] = nil }
+            .onChange(of: selectedFixerTemperature) { _, _ in phaseDurationOverrides[.fixer] = nil }
+            .onChange(of: washTemperature) { _, _ in phaseDurationOverrides[.wash] = nil }
+            .onChange(of: selectedToner) { _, _ in phaseDurationOverrides[.toning] = nil }
+            .onChange(of: selectedTonerDilution) { _, _ in phaseDurationOverrides[.toning] = nil }
     }
 
     private func resetConfirmationOverlay(for kind: ResetKind) -> some View {
@@ -484,6 +531,7 @@ struct SetupView: View {
 
     private var computedSession: DevelopmentSession {
         DevelopmentSession(
+            id: sessionID,
             paper: selectedPaper,
             paperSize: selectedPaperSize,
             testStripPaper: selectedTestStripPaper,
@@ -514,6 +562,26 @@ struct SetupView: View {
         )
     }
 
+    /// Tells the usage ledger how much solution is in the tray. Adding fresh chemistry
+    /// revives the bath proportionally, pouring some out leaves the percentage as it was.
+    private func registerVolume(_ milliliters: Int, chemical: Chemical, dilution: ChemicalDilution) {
+        usageStore.registerVolume(
+            Double(milliliters) / 1_000,
+            chemical: chemical,
+            dilution: dilution
+        )
+    }
+
+    private func registerCurrentVolumes() {
+        registerVolume(developerVolumeMilliliters, chemical: selectedDeveloper, dilution: selectedDeveloperDilution)
+        registerVolume(stopBathVolumeMilliliters, chemical: selectedStopBath, dilution: selectedStopBathDilution)
+        registerVolume(fixerVolumeMilliliters, chemical: selectedFixer, dilution: selectedFixerDilution)
+
+        if isToningEnabled {
+            registerVolume(tonerVolumeMilliliters, chemical: selectedToner, dilution: selectedTonerDilution)
+        }
+    }
+
     @ViewBuilder
     private func pickerSheet(for picker: SetupPicker) -> some View {
         switch picker {
@@ -524,11 +592,11 @@ struct SetupView: View {
             }
         case .paper:
             selectionSheet(title: copy.pickPaper) {
-                brandFilterBar(brands: MockDarkroomDatabase.paperManufacturers)
+                brandFilterBar(brands: DarkroomCatalog.paperManufacturers)
                 ForEach(filteredPapers) { paper in
                     selectionButton(
                         title: paper.displayName,
-                        subtitle: paper.type.displayName,
+                        subtitle: copy.paperTypeName(paper.type),
                         isSelected: paper.id == selectedPaper.id
                     ) {
                         applyPaperSelection(paper)
@@ -554,11 +622,11 @@ struct SetupView: View {
             }
         case .testStripPaper:
             selectionSheet(title: copy.pickPaper) {
-                brandFilterBar(brands: MockDarkroomDatabase.paperManufacturers)
+                brandFilterBar(brands: DarkroomCatalog.paperManufacturers)
                 ForEach(filteredPapers) { paper in
                     selectionButton(
                         title: paper.displayName,
-                        subtitle: paper.type.displayName,
+                        subtitle: copy.paperTypeName(paper.type),
                         isSelected: paper.id == selectedTestStripPaper.id
                     ) {
                         applyTestStripPaperSelection(paper)
@@ -584,8 +652,8 @@ struct SetupView: View {
             }
         case .developer:
             selectionSheet(title: copy.pickDeveloper) {
-                brandFilterBar(brands: documentedChemicalBrands(in: MockDarkroomDatabase.developers))
-                ForEach(filteredDocumentedChemicals(MockDarkroomDatabase.developers)) { developer in
+                brandFilterBar(brands: documentedChemicalBrands(in: DarkroomCatalog.developers))
+                ForEach(filteredDocumentedChemicals(DarkroomCatalog.developers)) { developer in
                     selectionButton(
                         title: developer.displayName,
                         subtitle: developer.dilutions.map(\.ratio).joined(separator: ", "),
@@ -629,8 +697,8 @@ struct SetupView: View {
             }
         case .stopBath:
             selectionSheet(title: copy.pickStopBath) {
-                brandFilterBar(brands: documentedChemicalBrands(in: MockDarkroomDatabase.stopBaths))
-                ForEach(filteredDocumentedChemicals(MockDarkroomDatabase.stopBaths)) { stopBath in
+                brandFilterBar(brands: documentedChemicalBrands(in: DarkroomCatalog.stopBaths))
+                ForEach(filteredDocumentedChemicals(DarkroomCatalog.stopBaths)) { stopBath in
                     selectionButton(
                         title: stopBath.displayName,
                         subtitle: stopBath.dilutions.map(\.ratio).joined(separator: ", "),
@@ -674,8 +742,8 @@ struct SetupView: View {
             }
         case .fixer:
             selectionSheet(title: copy.pickFixer) {
-                brandFilterBar(brands: documentedChemicalBrands(in: MockDarkroomDatabase.fixers))
-                ForEach(filteredDocumentedChemicals(MockDarkroomDatabase.fixers)) { fixer in
+                brandFilterBar(brands: documentedChemicalBrands(in: DarkroomCatalog.fixers))
+                ForEach(filteredDocumentedChemicals(DarkroomCatalog.fixers)) { fixer in
                     selectionButton(
                         title: fixer.displayName,
                         subtitle: fixer.dilutions.map(\.ratio).joined(separator: ", "),
@@ -735,15 +803,17 @@ struct SetupView: View {
         case .washTemperature:
             temperatureSheet(
                 title: copy.pickWaterTemperature,
-                temperatures: Array(stride(from: 5.0, through: 30.0, by: 1.0)),
+                temperatures: settingsStore.temperaturePickerValues(
+                    celsius: Array(stride(from: 5.0, through: 30.0, by: 1.0))
+                ),
                 selectedTemperature: washTemperature
             ) { temperature in
                 washTemperature = temperature
             }
         case .toner:
             selectionSheet(title: copy.pickToner) {
-                brandFilterBar(brands: documentedChemicalBrands(in: MockDarkroomDatabase.toners))
-                ForEach(filteredDocumentedChemicals(MockDarkroomDatabase.toners)) { toner in
+                brandFilterBar(brands: documentedChemicalBrands(in: DarkroomCatalog.toners))
+                ForEach(filteredDocumentedChemicals(DarkroomCatalog.toners)) { toner in
                     selectionButton(
                         title: toner.displayName,
                         subtitle: toner.dilutions.map(\.ratio).joined(separator: ", "),
@@ -769,7 +839,9 @@ struct SetupView: View {
         case .tonerTemperature:
             temperatureSheet(
                 title: copy.pickToningBathTemperature,
-                temperatures: Array(stride(from: 15.0, through: 35.0, by: 1.0)),
+                temperatures: settingsStore.temperaturePickerValues(
+                    celsius: Array(stride(from: 15.0, through: 35.0, by: 1.0))
+                ),
                 selectedTemperature: selectedTonerTemperature
             ) { temperature in
                 selectedTonerTemperature = temperature
@@ -834,7 +906,7 @@ struct SetupView: View {
         selectionSheet(title: title) {
             ForEach(paper.availableSizes) { size in
                 selectionButton(
-                    title: size.displayName,
+                    title: sizeText(size),
                     subtitle: nil,
                     isSelected: size.id == selectedSize.id
                 ) {
@@ -846,7 +918,7 @@ struct SetupView: View {
             selectionButton(
                 title: copy.customSize,
                 subtitle: isCustomPaperSize(selectedSize, relativeTo: paper)
-                    ? selectedSize.displayName
+                    ? sizeText(selectedSize)
                     : nil,
                 isSelected: isCustomPaperSize(selectedSize, relativeTo: paper)
             ) {
@@ -923,13 +995,23 @@ struct SetupView: View {
         .preferredColorScheme(.dark)
     }
 
+    /// Half-step grid, so a 2.5 cm test strip (and 1/4" imperial steps) stays reachable.
+    /// In imperial mode the wheel walks whole and half inches.
     private var customSizeOptions: [Double] {
-        Array(stride(from: 1.0, through: 100.0, by: 1.0))
+        switch settingsStore.unitSystem {
+        case .metric:
+            return Array(stride(from: 0.5, through: 100.0, by: 0.5))
+        case .imperial:
+            return Array(stride(from: 0.5, through: 40.0, by: 0.5)).map { $0 * 2.54 }
+        }
     }
 
     private func snappedCustomSize(_ value: Double) -> Double {
-        let snapped = value.rounded()
-        return min(max(1.0, snapped), 100.0)
+        let clamped = min(max(customSizeOptions.first ?? 0.5, value), customSizeOptions.last ?? 100)
+
+        return customSizeOptions.min { lhs, rhs in
+            abs(lhs - clamped) < abs(rhs - clamped)
+        } ?? clamped
     }
 
     private func isCustomPaperSize(_ size: PaperSize, relativeTo paper: Paper) -> Bool {
@@ -937,8 +1019,11 @@ struct SetupView: View {
     }
 
     private func centimetersText(_ value: Double) -> String {
-        let formatted = value.formatted(.number.precision(.fractionLength(0...1)))
-        return "\(formatted) \(copy.centimetersUnit)"
+        settingsStore.formatLength(centimeters: value)
+    }
+
+    private func sizeText(_ size: PaperSize) -> String {
+        settingsStore.formatSize(size)
     }
 
     private func temperatureSheet(
@@ -1139,36 +1224,42 @@ struct SetupView: View {
     }
 
     private func brandFilterBar(brands: [String]) -> some View {
-        let resolvedBrands = brands.isEmpty ? MockDarkroomDatabase.manufacturers : brands
+        let resolvedBrands = brands.isEmpty ? DarkroomCatalog.manufacturers : brands
 
         return VStack(alignment: .leading, spacing: 10) {
             Text(copy.pickBrand)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(DarkroomPalette.red.opacity(0.75))
 
-            HStack(spacing: 10) {
-                ForEach(resolvedBrands, id: \.self) { brand in
-                    let isSelected = brand.caseInsensitiveCompare(pickerBrandFilter) == .orderedSame
-                    Button {
-                        pickerBrandFilter = brand
-                    } label: {
-                        Text(brand)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(DarkroomPalette.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(cardColor))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(
-                                        DarkroomPalette.red.opacity(isSelected ? 1 : 0.25),
-                                        lineWidth: isSelected ? 2 : 1
-                                    )
-                            )
+            // Scrolls instead of squeezing every brand into one row – the catalog grows.
+            ScrollView(.horizontal) {
+                HStack(spacing: 10) {
+                    ForEach(resolvedBrands, id: \.self) { brand in
+                        let isSelected = brand.caseInsensitiveCompare(pickerBrandFilter) == .orderedSame
+                        Button {
+                            pickerBrandFilter = brand
+                        } label: {
+                            Text(brand)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(DarkroomPalette.red)
+                                .lineLimit(1)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(cardColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(
+                                            DarkroomPalette.red.opacity(isSelected ? 1 : 0.25),
+                                            lineWidth: isSelected ? 2 : 1
+                                        )
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         }
         .padding(.bottom, 4)
         .onAppear {
@@ -1519,7 +1610,16 @@ struct SetupView: View {
             for: selectedPaper,
             chemicalManufacturer: chemicalManufacturer
         )
-        return temperatures.isEmpty ? [20] : temperatures
+
+        // In Fahrenheit mode the wheel steps by whole °F instead of showing
+        // converted Celsius steps like 68, 70, 71, 73 °F.
+        return settingsStore.temperaturePickerValues(
+            celsius: temperatures.isEmpty ? [20] : temperatures,
+            documented: dilution.documentedTemperatures(
+                for: selectedPaper,
+                chemicalManufacturer: chemicalManufacturer
+            )
+        )
     }
 
     private func firstTemperature(
@@ -1545,7 +1645,7 @@ struct SetupView: View {
     }
 
     private var filteredPapers: [Paper] {
-        MockDarkroomDatabase.papers.filter {
+        DarkroomCatalog.papers.filter {
             $0.manufacturer.caseInsensitiveCompare(pickerBrandFilter) == .orderedSame
         }
     }
@@ -1554,7 +1654,7 @@ struct SetupView: View {
         Array(
             Set(
                 chemicals
-                    .filter { $0.isDocumented(for: selectedPaper) }
+                    .filter { $0.isApplicable(for: selectedPaper) }
                     .map(\.manufacturer)
             )
         ).sorted()
@@ -1562,16 +1662,16 @@ struct SetupView: View {
 
     private func filteredDocumentedChemicals(_ chemicals: [Chemical]) -> [Chemical] {
         chemicals.filter {
-            $0.isDocumented(for: selectedPaper)
+            $0.isApplicable(for: selectedPaper)
                 && $0.manufacturer.caseInsensitiveCompare(pickerBrandFilter) == .orderedSame
         }
     }
 
     private func documentedDilutions(for chemical: Chemical) -> [ChemicalDilution] {
-        let documented = chemical.dilutions.filter {
-            $0.isDocumented(for: selectedPaper, chemicalManufacturer: chemical.manufacturer)
+        let applicable = chemical.dilutions.filter {
+            $0.isApplicable(for: selectedPaper, chemicalManufacturer: chemical.manufacturer)
         }
-        return documented.isEmpty ? chemical.dilutions : documented
+        return applicable.isEmpty ? chemical.dilutions : applicable
     }
 
     private func openPicker(_ picker: SetupPicker) {
@@ -1625,33 +1725,33 @@ struct SetupView: View {
     }
 
     private func syncChemistry(to paper: Paper) {
-        if !selectedDeveloper.isDocumented(for: paper),
-           let developer = MockDarkroomDatabase.developers.first(where: { $0.isDocumented(for: paper) }) {
+        if !selectedDeveloper.isApplicable(for: paper),
+           let developer = DarkroomCatalog.developers.first(where: { $0.isApplicable(for: paper) }) {
             selectedDeveloper = developer
             selectedDeveloperDilution = developer.preferredDilution(for: paper)
-        } else if !selectedDeveloperDilution.isDocumented(
+        } else if !selectedDeveloperDilution.isApplicable(
             for: paper,
             chemicalManufacturer: selectedDeveloper.manufacturer
         ) {
             selectedDeveloperDilution = selectedDeveloper.preferredDilution(for: paper)
         }
 
-        if !selectedStopBath.isDocumented(for: paper),
-           let stopBath = MockDarkroomDatabase.stopBaths.first(where: { $0.isDocumented(for: paper) }) {
+        if !selectedStopBath.isApplicable(for: paper),
+           let stopBath = DarkroomCatalog.stopBaths.first(where: { $0.isApplicable(for: paper) }) {
             selectedStopBath = stopBath
             selectedStopBathDilution = stopBath.preferredDilution(for: paper)
-        } else if !selectedStopBathDilution.isDocumented(
+        } else if !selectedStopBathDilution.isApplicable(
             for: paper,
             chemicalManufacturer: selectedStopBath.manufacturer
         ) {
             selectedStopBathDilution = selectedStopBath.preferredDilution(for: paper)
         }
 
-        if !selectedFixer.isDocumented(for: paper),
-           let fixer = MockDarkroomDatabase.fixers.first(where: { $0.isDocumented(for: paper) }) {
+        if !selectedFixer.isApplicable(for: paper),
+           let fixer = DarkroomCatalog.fixers.first(where: { $0.isApplicable(for: paper) }) {
             selectedFixer = fixer
             selectedFixerDilution = fixer.preferredDilution(for: paper)
-        } else if !selectedFixerDilution.isDocumented(
+        } else if !selectedFixerDilution.isApplicable(
             for: paper,
             chemicalManufacturer: selectedFixer.manufacturer
         ) {
@@ -1659,11 +1759,11 @@ struct SetupView: View {
         }
 
         if isToningEnabled {
-            if !selectedToner.isDocumented(for: paper),
-               let toner = MockDarkroomDatabase.toners.first(where: { $0.isDocumented(for: paper) }) {
+            if !selectedToner.isApplicable(for: paper),
+               let toner = DarkroomCatalog.toners.first(where: { $0.isApplicable(for: paper) }) {
                 selectedToner = toner
                 selectedTonerDilution = toner.preferredDilution(for: paper)
-            } else if MockDarkroomDatabase.toners.contains(where: { $0.isDocumented(for: paper) }) == false {
+            } else if DarkroomCatalog.toners.contains(where: { $0.isApplicable(for: paper) }) == false {
                 isToningEnabled = false
             }
         }
@@ -1812,7 +1912,7 @@ struct SetupView: View {
     }
 
     private func resetToDefaults() {
-        apply(session: MockDarkroomDatabase.configuredDefaultSession)
+        apply(session: DarkroomCatalog.configuredDefaultSession)
     }
 
     private func apply(session: DevelopmentSession) {
@@ -2084,11 +2184,23 @@ struct SettingsSheetView: View {
 
                             optionRow(
                                 title: copy.temperatureUnit,
-                                value: settingsStore.temperatureUnit.displayName(language: settingsStore.language)
+                                value: settingsStore.temperatureUnit.displayName
                             ) {
                                 let units = TemperatureUnit.allCases
                                 if let index = units.firstIndex(of: settingsStore.temperatureUnit) {
                                     settingsStore.temperatureUnit = units[(index + 1) % units.count]
+                                }
+                            }
+
+                            settingsDivider
+
+                            optionRow(
+                                title: copy.unitSystem,
+                                value: settingsStore.unitSystem.displayName(copy: copy)
+                            ) {
+                                let systems = UnitSystem.allCases
+                                if let index = systems.firstIndex(of: settingsStore.unitSystem) {
+                                    settingsStore.unitSystem = systems[(index + 1) % systems.count]
                                 }
                             }
 
@@ -2482,7 +2594,8 @@ private struct PresetsSheetView: View {
     }
 
     private func presetSlot(letter: String) -> some View {
-        let name = DevelopmentPreset.displayName(for: letter)
+        // Stored name stays "Preset X" (it is the slot identity); only the label is localized.
+        let name = copy.presetSlotName(letter)
         let preset = presetStore.preset(forLetter: letter)
 
         return HStack(spacing: 10) {
@@ -2553,13 +2666,17 @@ private struct PresetsSheetView: View {
             )
     }
 
+    private func presetDisplayName(_ preset: DevelopmentPreset) -> String {
+        preset.letter.map { copy.presetSlotName($0) } ?? preset.name
+    }
+
     private func confirmationOverlay(for action: PendingPresetAction) -> some View {
         let message: String = {
             switch action {
             case .overwrite(let preset):
-                return copy.confirmOverwritePresetMessage(preset.name)
+                return copy.confirmOverwritePresetMessage(presetDisplayName(preset))
             case .delete(let preset):
-                return copy.confirmDeletePresetMessage(preset.name)
+                return copy.confirmDeletePresetMessage(presetDisplayName(preset))
             }
         }()
 
@@ -2637,5 +2754,5 @@ private struct PresetsSheetView: View {
 }
 
 #Preview {
-    SetupView(initialSession: MockDarkroomDatabase.defaultSession) { _ in }
+    SetupView(initialSession: DarkroomCatalog.defaultSession) { _ in }
 }

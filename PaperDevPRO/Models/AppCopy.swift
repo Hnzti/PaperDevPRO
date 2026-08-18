@@ -1,6 +1,11 @@
 import Foundation
 
-enum AppLanguage: String, CaseIterable, Identifiable {
+enum AppInfo {
+    /// Brand name shown inside the app (Info.plist carries the shorter home-screen name).
+    static let displayName = "PaperDeveloper"
+}
+
+enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case czech = "cs"
     case english = "en"
     case german = "de"
@@ -22,7 +27,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// Flip to `false` after the war to re-enable Russian.
-    static var isRussianTemporarilyBlocked = true
+    static let isRussianTemporarilyBlocked = true
 
     var isTemporarilyBlocked: Bool {
         self == .russian && Self.isRussianTemporarilyBlocked
@@ -40,13 +45,89 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .ukrainian: return "Українська"
         case .swedish: return "Svenska"
         case .finnish: return "Suomi"
-        case .norwegian: return "Norsk"
+        case .norwegian: return "Norsk bokmål"
         case .danish: return "Dansk"
         case .slovak: return "Slovenčina"
         case .russian: return "Русский"
         case .greek: return "Ελληνικά"
         case .japanese: return "日本語"
-        case .chinese: return "中文"
+        case .chinese: return "简体中文"
+        }
+    }
+
+    /// Language preselected on first launch, derived from the device language list.
+    /// Falls back to English when the phone speaks something we do not ship.
+    static func preferredFromSystem(
+        preferredLanguages: [String] = Locale.preferredLanguages
+    ) -> AppLanguage {
+        for identifier in preferredLanguages {
+            guard let language = AppLanguage(systemIdentifier: identifier),
+                  !language.isTemporarilyBlocked else {
+                continue
+            }
+            return language
+        }
+        return .english
+    }
+
+    private init?(systemIdentifier: String) {
+        let code = systemIdentifier
+            .split(separator: "-")
+            .first
+            .map(String.init)?
+            .lowercased() ?? systemIdentifier.lowercased()
+
+        switch code {
+        // Norwegian ships as Bokmål; Nynorsk speakers read it as well.
+        case "no", "nn", "nb": self = .norwegian
+        // We ship Simplified Chinese only.
+        case "zh": self = .chinese
+        default:
+            guard let language = AppLanguage(rawValue: code) else { return nil }
+            self = language
+        }
+    }
+}
+
+/// CLDR plural categories, limited to the ones our languages actually use.
+enum PluralCategory: String {
+    case one
+    case two
+    case few
+    case many
+    case other
+
+    static func category(for count: Int, language: AppLanguage) -> PluralCategory {
+        let n = abs(count)
+
+        switch language {
+        case .czech, .slovak:
+            if n == 1 { return .one }
+            if (2...4).contains(n) { return .few }
+            return .other
+
+        case .slovenian:
+            switch n % 100 {
+            case 1: return .one
+            case 2: return .two
+            case 3, 4: return .few
+            default: return .other
+            }
+
+        case .russian, .ukrainian:
+            if n % 10 == 1, n % 100 != 11 { return .one }
+            if (2...4).contains(n % 10), !(12...14).contains(n % 100) { return .few }
+            return .many
+
+        case .french:
+            return n <= 1 ? .one : .other
+
+        case .japanese, .chinese:
+            return .other
+
+        case .english, .german, .spanish, .italian, .swedish, .finnish,
+             .norwegian, .danish, .greek:
+            return n == 1 ? .one : .other
         }
     }
 }
@@ -62,6 +143,25 @@ struct AppCopy {
 
     private func tf(_ key: String, _ args: CVarArg...) -> String {
         String(format: t(key), locale: Locale(identifier: language.rawValue), arguments: args)
+    }
+
+    /// Same as `tf`, but without a locale: a year must never get a grouping
+    /// separator (`© 2,026`), which is what `%d` does when a locale is supplied.
+    private func tfPlain(_ key: String, _ args: CVarArg...) -> String {
+        String(format: t(key), arguments: args)
+    }
+
+    /// Picks the grammatically correct variant (`key#one`, `key#few`, …) and
+    /// falls back to the base key, so a missing variant can never show a raw key.
+    private func plural(_ key: String, _ count: Int) -> String {
+        let category = PluralCategory.category(for: count, language: language)
+        let candidates = ["\(key)#\(category.rawValue)", "\(key)#other", key]
+        let format = candidates
+            .lazy
+            .compactMap { Self.table[$0]?[language.rawValue] ?? Self.table[$0]?["en"] }
+            .first ?? key
+
+        return String(format: format, locale: Locale(identifier: language.rawValue), count)
     }
 
     var a11yDocumented: String { t("a11yDocumented") }
@@ -80,7 +180,6 @@ struct AppCopy {
     var controlsHintAddPaper: String { t("controlsHintAddPaper") }
     var controlsHintAddStrip: String { t("controlsHintAddStrip") }
     var controlsHintDelete: String { t("controlsHintDelete") }
-    var copyright: String { t("copyright") }
     var customSize: String { t("customSize") }
     var customSizeTitle: String { t("customSizeTitle") }
     var darkroomBrightness: String { t("darkroomBrightness") }
@@ -90,6 +189,7 @@ struct AppCopy {
     var emptyPresetSlot: String { t("emptyPresetSlot") }
     var haptics: String { t("haptics") }
     var heightLabel: String { t("heightLabel") }
+    var inchesUnit: String { t("inchesUnit") }
     var keepScreenOn: String { t("keepScreenOn") }
     var languageTitle: String { t("languageTitle") }
     var legendDocumented: String { t("legendDocumented") }
@@ -103,6 +203,7 @@ struct AppCopy {
     var minutesLabel: String { t("minutesLabel") }
     var minutesUnit: String { t("minutesUnit") }
     var noPresetSaved: String { t("noPresetSaved") }
+    var notificationRunCompleteBody: String { t("notificationRunCompleteBody") }
     var off: String { t("off") }
     var on: String { t("on") }
     var overwritePreset: String { t("overwritePreset") }
@@ -190,17 +291,30 @@ struct AppCopy {
     var temperatureUnit: String { t("temperatureUnit") }
     var testStrip: String { t("testStrip") }
     var toner: String { t("toner") }
+    var unitSystem: String { t("unitSystem") }
+    var unitSystemImperial: String { t("unitSystemImperial") }
+    var unitSystemMetric: String { t("unitSystemMetric") }
     var version: String { t("version") }
     var volumeLabel: String { t("volumeLabel") }
     var widthLabel: String { t("widthLabel") }
+
+    var copyright: String { tfPlain("copyright", Self.copyrightYear) }
 
     var controlsHint: String {
         [controlsHintAddPaper, controlsHintAddStrip, controlsHintDelete].joined(separator: "\n")
     }
 
-    func presetsSavedCount(_ count: Int) -> String { tf("presetsSavedCount", count) }
+    func presetsSavedCount(_ count: Int) -> String { plural("presetsSavedCount", count) }
     func confirmOverwritePresetMessage(_ name: String) -> String { tf("confirmOverwritePresetMessage", name) }
     func confirmDeletePresetMessage(_ name: String) -> String { tf("confirmDeletePresetMessage", name) }
+    func presetSlotName(_ letter: String) -> String { tf("presetSlotName", letter) }
+
+    func paperTypeName(_ type: PaperType) -> String {
+        switch type {
+        case .resinCoated: return t("paperTypeResinCoated")
+        case .fiberBased: return t("paperTypeFiberBased")
+        }
+    }
 
     func phaseTitle(_ phase: ProcessPhase) -> String {
         switch phase {
@@ -212,6 +326,9 @@ struct AppCopy {
         case .toning: return t("phaseToning")
         }
     }
+
+    private static let copyrightYear = Calendar(identifier: .gregorian)
+        .component(.year, from: Date())
 
     private static let table: [String: [String: String]] = {
         guard let url = Bundle.main.url(forResource: "Localizations", withExtension: "json"),

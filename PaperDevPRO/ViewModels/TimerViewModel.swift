@@ -89,14 +89,19 @@ public final class TimerViewModel: ObservableObject {
         return formatTime(remainingTime)
     }
 
-    public var nextPhaseTitle: String? {
+    public var nextPhase: ProcessPhase? {
         let nextIndex = currentPhaseIndex + 1
         guard phases.indices.contains(nextIndex) else { return nil }
-        return phases[nextIndex].phase.title
+        return phases[nextIndex].phase
+    }
+
+    /// A finished run has to be reset before it can run again, so START stays dimmed.
+    public var isStartPauseDisabled: Bool {
+        !hasRuns || state == .finished
     }
 
     public init(session: DevelopmentSession? = nil) {
-        let resolvedSession = session ?? MockDarkroomDatabase.configuredDefaultSession
+        let resolvedSession = session ?? DarkroomCatalog.configuredDefaultSession
         self.session = resolvedSession
         self.runs = []
         self.selectedRunID = nil
@@ -115,7 +120,7 @@ public final class TimerViewModel: ObservableObject {
         self.selectedRunID = nil
         self.nextPaperNumber = 1
         self.nextTestStripNumber = 1
-        setIdleTimerDisabled(false)
+        applyKeepScreenOn()
     }
 
     public func configureSelectedRun(session: DevelopmentSession) {
@@ -142,7 +147,7 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func resetProject() {
-        configure(session: MockDarkroomDatabase.configuredDefaultSession)
+        configure(session: DarkroomCatalog.configuredDefaultSession)
     }
 
     public func addPaperRun() {
@@ -186,7 +191,9 @@ public final class TimerViewModel: ObservableObject {
     }
 
     public func startOrPause() {
-        guard hasRuns else { return }
+        guard hasRuns, state != .finished else { return }
+
+        RunCompletionNotifier.shared.prepareAuthorization()
 
         mutateSelectedRun { run in
             switch run.state {
@@ -197,9 +204,7 @@ public final class TimerViewModel: ObservableObject {
                 run.state = .paused
                 run.lastTickDate = nil
             case .finished:
-                reset(run: &run)
-                run.state = .running
-                run.lastTickDate = Date()
+                break
             }
         }
 
@@ -210,7 +215,7 @@ public final class TimerViewModel: ObservableObject {
         guard hasRuns else { return }
 
         mutateSelectedRun { run in
-            guard run.state != .running else { return }
+            guard run.state == .idle || run.state == .paused else { return }
             run.state = .running
             run.lastTickDate = Date()
         }
@@ -238,8 +243,50 @@ public final class TimerViewModel: ObservableObject {
 
     public func skipToNextPhase() {
         guard let index = runs.firstIndex(where: { $0.id == selectedRunID }) else { return }
-        advanceToNextPhase(for: index)
+        advanceToNextPhase(for: index, at: Date())
         refreshTimerLoop()
+    }
+
+    /// Going to the background: the process keeps running against the wall clock, so
+    /// hand the finish time over to a local notification. Nothing else makes noise.
+    public func applicationDidEnterBackground() {
+        let now = Date()
+        let completions = runs.compactMap { run -> RunCompletionNotifier.PendingCompletion? in
+            guard let date = expectedCompletionDate(for: run, from: now) else { return nil }
+            return RunCompletionNotifier.PendingCompletion(
+                id: run.id,
+                title: runTitle(for: run),
+                date: date
+            )
+        }
+
+        let settings = DarkroomSettingsStore.shared
+        RunCompletionNotifier.shared.schedule(
+            completions,
+            body: settings.copy.notificationRunCompleteBody,
+            playSound: settings.isSoundEnabled
+        )
+    }
+
+    /// Back in front: drop the pending notifications and catch the timers up to now.
+    public func applicationDidBecomeActive() {
+        RunCompletionNotifier.shared.cancelAll()
+        tick()
+    }
+
+    private func expectedCompletionDate(for run: PaperRun, from now: Date) -> Date? {
+        guard run.state == .running else { return nil }
+
+        let laterPhases = run.phases
+            .dropFirst(run.currentPhaseIndex + 1)
+            .reduce(0) { $0 + $1.duration }
+
+        return now.addingTimeInterval(run.remainingTime + laterPhases)
+    }
+
+    private func runTitle(for run: PaperRun) -> String {
+        let copy = DarkroomSettingsStore.shared.copy
+        return "\(run.isTestStrip ? copy.testStrip : copy.paper) \(run.number)"
     }
 
     private static func makeRun(
@@ -302,35 +349,79 @@ public final class TimerViewModel: ObservableObject {
 
     private func refreshTimerLoop() {
         if hasRunningRuns {
-            setIdleTimerDisabled(true)
+            applyKeepScreenOn()
             startTimerLoop()
         } else {
             stopTimerLoop()
-            setIdleTimerDisabled(false)
+            applyKeepScreenOn()
         }
     }
 
     private func tick() {
         let now = Date()
 
-        for index in runs.indices {
-            guard runs[index].state == .running else { continue }
+        for index in runs.indices where runs[index].state == .running {
+            advance(runIndex: index, to: now)
+        }
 
-            let elapsed = now.timeIntervalSince(runs[index].lastTickDate ?? now)
-            runs[index].lastTickDate = now
-            runs[index].remainingTime -= elapsed
+        // Only touch the run loop / idle timer when something actually stopped,
+        // instead of four times per second.
+        if !hasRunningRuns {
+            refreshTimerLoop()
+        }
+    }
 
-            if runs[index].remainingTime <= 0 {
-                advanceToNextPhase(for: index)
+    /// Consumes the whole elapsed interval, phase by phase. A single tick can cover
+    /// minutes (screen locked, app suspended), so the overflow has to roll into the
+    /// following phases instead of being thrown away.
+    #if DEBUG
+    /// Same catch-up path a tick takes, with an explicit "now" so the wall clock
+    /// does not have to be waited out in tests.
+    func catchUp(to date: Date) {
+        for index in runs.indices where runs[index].state == .running {
+            advance(runIndex: index, to: date)
+        }
+
+        if !hasRunningRuns {
+            refreshTimerLoop()
+        }
+    }
+    #endif
+
+    private func advance(runIndex index: Int, to now: Date) {
+        var elapsed = now.timeIntervalSince(runs[index].lastTickDate ?? now)
+        runs[index].lastTickDate = now
+        guard elapsed > 0 else { return }
+
+        var didCrossPhase = false
+
+        while elapsed > 0, runs[index].state == .running {
+            if runs[index].remainingTime > elapsed {
+                runs[index].remainingTime -= elapsed
+                elapsed = 0
             } else {
-                triggerFinalSecondsWarningIfNeeded(for: index)
+                elapsed -= runs[index].remainingTime
+                runs[index].remainingTime = 0
+                advanceToNextPhase(for: index, at: now, shouldNotify: false)
+                didCrossPhase = true
             }
         }
 
-        refreshTimerLoop()
+        guard isSelectedRun(at: index) else { return }
+
+        // One sound per tick even if several phases elapsed at once.
+        if runs[index].state == .finished {
+            if didCrossPhase {
+                triggerCompletionFeedback()
+            }
+        } else if didCrossPhase {
+            triggerPhaseChangeFeedback()
+        } else {
+            triggerFinalSecondsWarningIfNeeded(for: index)
+        }
     }
 
-    private func advanceToNextPhase(for index: Int) {
+    private func advanceToNextPhase(for index: Int, at now: Date, shouldNotify: Bool = true) {
         runs[index].lastWarningSecond = nil
 
         guard runs[index].currentPhaseIndex + 1 < runs[index].phases.count else {
@@ -343,7 +434,7 @@ public final class TimerViewModel: ObservableObject {
                 runs[index].usageWasRecorded = true
             }
 
-            if isSelectedRun(at: index) {
+            if shouldNotify, isSelectedRun(at: index) {
                 triggerCompletionFeedback()
             }
             return
@@ -351,9 +442,9 @@ public final class TimerViewModel: ObservableObject {
 
         runs[index].currentPhaseIndex += 1
         runs[index].remainingTime = runs[index].phases[runs[index].currentPhaseIndex].duration
-        runs[index].lastTickDate = Date()
+        runs[index].lastTickDate = now
 
-        if isSelectedRun(at: index) {
+        if shouldNotify, isSelectedRun(at: index) {
             triggerPhaseChangeFeedback()
         }
     }
@@ -429,8 +520,7 @@ public final class TimerViewModel: ObservableObject {
         #endif
     }
 
-    private func setIdleTimerDisabled(_ isDisabled: Bool) {
-        _ = isDisabled
+    private func applyKeepScreenOn() {
         DarkroomSettingsStore.shared.applyKeepScreenOn()
     }
 }
