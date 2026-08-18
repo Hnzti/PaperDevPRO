@@ -4,7 +4,7 @@ Copy into App Store Connect → App Review Information → Notes
 ---
 
 VERSION
-2.0 (build 3)
+2.0 (build 4)
 
 WHAT THE APP DOES
 PaperDev is an offline darkroom timer for black-and-white photographic paper processing. Users select paper, chemistry, dilutions, temperatures and run timed develop / stop / fix / wash (optional toning) cycles. Multiple paper runs and test strips can run in parallel.
