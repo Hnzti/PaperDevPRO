@@ -319,6 +319,7 @@ struct AppCopy {
     var temperatureUnit: String { t("temperatureUnit") }
     var testStrip: String { t("testStrip") }
     var timeVisual: String { t("timeVisual") }
+    var toningManualContinue: String { t("toningManualContinue") }
     var unitSystem: String { t("unitSystem") }
     var unitSystemImperial: String { t("unitSystemImperial") }
     var unitSystemMetric: String { t("unitSystemMetric") }

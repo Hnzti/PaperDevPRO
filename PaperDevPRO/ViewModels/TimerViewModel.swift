@@ -73,6 +73,9 @@ public final class TimerViewModel: ObservableObject {
 
     public var formattedRemainingTime: String {
         guard hasRuns else { return "--:--" }
+        if currentPhase?.requiresManualContinue == true {
+            return "--:--"
+        }
         return formatTime(remainingTime)
     }
 
@@ -204,6 +207,11 @@ public final class TimerViewModel: ObservableObject {
         RunCompletionNotifier.shared.prepareAuthorization()
         DarkroomFeedback.shared.prepare()
 
+        if state == .paused, selectedRun?.currentPhase.requiresManualContinue == true {
+            continueFromManualHold()
+            return
+        }
+
         mutateSelectedRun { run in
             switch run.state {
             case .idle, .paused:
@@ -217,6 +225,19 @@ public final class TimerViewModel: ObservableObject {
             }
         }
 
+        refreshTimerLoop()
+    }
+
+    private func continueFromManualHold() {
+        guard let selectedRunID,
+              let index = runs.firstIndex(where: { $0.id == selectedRunID }) else { return }
+
+        let now = Date()
+        advanceToNextPhase(for: index, at: now, shouldNotify: true)
+        if runs[index].state != .finished {
+            runs[index].state = .running
+            runs[index].lastTickDate = now
+        }
         refreshTimerLoop()
     }
 
@@ -267,6 +288,9 @@ public final class TimerViewModel: ObservableObject {
 
     private func expectedCompletionDate(for run: PaperRun, from now: Date) -> Date? {
         guard run.state == .running else { return nil }
+        guard !run.phases[run.currentPhaseIndex...].contains(where: \.requiresManualContinue) else {
+            return nil
+        }
 
         let laterPhases = run.phases
             .dropFirst(run.currentPhaseIndex + 1)
@@ -434,6 +458,12 @@ public final class TimerViewModel: ObservableObject {
         runs[index].currentPhaseIndex += 1
         runs[index].remainingTime = runs[index].phases[runs[index].currentPhaseIndex].duration
         runs[index].lastTickDate = now
+
+        if runs[index].currentPhase.requiresManualContinue {
+            runs[index].state = .paused
+            runs[index].lastTickDate = nil
+            runs[index].remainingTime = 0
+        }
 
         if shouldNotify, isSelectedRun(at: index) {
             triggerPhaseChangeFeedback()

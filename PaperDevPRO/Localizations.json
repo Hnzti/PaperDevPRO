@@ -2583,6 +2583,25 @@
     "ja": "目視",
     "zh": "目视"
   },
+  "toningManualContinue": {
+    "cs": "Ruční pokračování",
+    "en": "Continue manually",
+    "de": "Manuell fortfahren",
+    "fr": "Continuer manuellement",
+    "es": "Continuar manualmente",
+    "it": "Continua manualmente",
+    "sl": "Ročno nadaljevanje",
+    "uk": "Продовжити вручну",
+    "sv": "Fortsätt manuellt",
+    "fi": "Jatka manuaalisesti",
+    "nb": "Fortsett manuelt",
+    "da": "Fortsæt manuelt",
+    "sk": "Ručné pokračovanie",
+    "ru": "Продолжить вручную",
+    "el": "Συνέχεια χειροκίνητα",
+    "ja": "手動で続ける",
+    "zh": "手动继续"
+  },
   "version": {
     "cs": "Verze",
     "en": "Version",

@@ -237,6 +237,33 @@ final class DarkroomModelTests: XCTestCase {
         XCTAssertEqual(toning.duration, 180)
         let washAfter = try XCTUnwrap(phases.first { $0.phase == .washAfterToning })
         XCTAssertEqual(washAfter.duration, 2 * 60)
+        XCTAssertFalse(toning.requiresManualContinue)
+    }
+
+    func testVisualToningWaitsForManualContinueByDefault() throws {
+        var session = DarkroomCatalog.defaultSession
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "ilford-harman-selenium"))
+        session.isToningEnabled = true
+        session.toner = toner
+        session.tonerDilution = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+3" })
+        XCTAssertTrue(session.isToningManualContinue)
+
+        let toning = try XCTUnwrap(session.resolvedPhases().first { $0.phase == .toning })
+        XCTAssertTrue(toning.requiresManualContinue)
+        XCTAssertEqual(toning.duration, 0)
+    }
+
+    func testVisualToningUsesThreeMinutesWhenManualContinueIsOff() throws {
+        var session = DarkroomCatalog.defaultSession
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "ilford-harman-selenium"))
+        session.isToningEnabled = true
+        session.toner = toner
+        session.tonerDilution = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+3" })
+        session.isToningManualContinue = false
+
+        let toning = try XCTUnwrap(session.resolvedPhases().first { $0.phase == .toning })
+        XCTAssertFalse(toning.requiresManualContinue)
+        XCTAssertEqual(toning.duration, 180)
     }
 
     func testPaperRunWithoutToningDoesNotAddToningPhases() {

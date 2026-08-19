@@ -451,7 +451,7 @@ public struct DarkroomTimerView: View {
                 .darkroomFont(18, weight: .bold)
                 .lineLimit(1)
 
-            Text(durationText(for: timedPhase.duration))
+            Text(timedPhase.requiresManualContinue ? copy.timeVisual : durationText(for: timedPhase.duration))
                 .darkroomFont(20, weight: .bold, design: .monospaced)
                 .lineLimit(1)
         }

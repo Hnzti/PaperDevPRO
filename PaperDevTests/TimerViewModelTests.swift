@@ -219,4 +219,33 @@ final class TimerViewModelTests: XCTestCase {
         viewModel.addPaperRun()
         XCTAssertNotEqual(viewModel.formattedRemainingTime, "--:--")
     }
+
+    func testVisualToningPausesUntilResumeThenContinuesToWash() throws {
+        var session = DarkroomCatalog.defaultSession
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "ilford-harman-selenium"))
+        session.isToningEnabled = true
+        session.toner = toner
+        session.tonerDilution = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+3" })
+        session.isToningManualContinue = true
+
+        let viewModel = TimerViewModel(session: session)
+        viewModel.addPaperRun()
+
+        let timeUntilToning = viewModel.phases
+            .prefix { $0.phase != .toning }
+            .reduce(0) { $0 + $1.duration }
+        let start = Date()
+        viewModel.startOrPause()
+        viewModel.catchUp(to: start.addingTimeInterval(timeUntilToning + 1))
+
+        XCTAssertEqual(viewModel.currentPhase?.phase, .toning)
+        XCTAssertTrue(viewModel.currentPhase?.requiresManualContinue == true)
+        XCTAssertEqual(viewModel.state, .paused)
+        XCTAssertEqual(viewModel.formattedRemainingTime, "--:--")
+
+        viewModel.startOrPause()
+
+        XCTAssertEqual(viewModel.currentPhase?.phase, .transferToWashAfterToning)
+        XCTAssertEqual(viewModel.state, .running)
+    }
 }

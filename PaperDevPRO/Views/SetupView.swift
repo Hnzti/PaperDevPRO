@@ -40,6 +40,7 @@ struct SetupView: View {
     @State private var transferAfterToningSeconds: Int
     @State private var washTemperature: Double
     @State private var isToningEnabled: Bool
+    @State private var isToningManualContinue: Bool
     @State private var selectedToner: Chemical
     @State private var selectedTonerDilution: ChemicalDilution
     @State private var selectedTonerTemperature: Double
@@ -113,6 +114,7 @@ struct SetupView: View {
         _transferAfterToningSeconds = State(initialValue: Int(initialSession.transferAfterToningDuration.rounded()))
         _washTemperature = State(initialValue: initialSession.washTemperatureCelsius)
         _isToningEnabled = State(initialValue: initialSession.isToningEnabled)
+        _isToningManualContinue = State(initialValue: initialSession.isToningManualContinue)
         let toner = initialSession.toner ?? DarkroomCatalog.toners.first ?? initialSession.fixer
         _selectedToner = State(initialValue: toner)
         _selectedTonerDilution = State(initialValue: initialSession.tonerDilution ?? toner.dilutions[0])
@@ -452,6 +454,7 @@ struct SetupView: View {
             transferAfterToningDuration: TimeInterval(transferAfterToningSeconds),
             washTemperatureCelsius: washTemperature,
             isToningEnabled: isToningEnabled,
+            isToningManualContinue: isToningManualContinue,
             toner: isToningEnabled ? selectedToner : nil,
             tonerDilution: isToningEnabled ? selectedTonerDilution : nil,
             toningTemperatureCelsius: selectedTonerTemperature,
@@ -1473,6 +1476,10 @@ struct SetupView: View {
                     chemicalManufacturer: selectedToner.manufacturer,
                     temperatureCelsius: selectedTonerTemperature
                 )
+                if selectedTonerDilution.timeRules.isEmpty {
+                    divider
+                    toningManualContinueToggleRow
+                }
                 divider
                 capacityRow(chemical: selectedToner, dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
                 divider
@@ -1501,11 +1508,15 @@ struct SetupView: View {
         settingsSection(title: copy.sectionProcess) {
             let phases = computedSession.resolvedPhases()
             ForEach(Array(phases.enumerated()), id: \.element.id) { index, phase in
-                pickerRow(
-                    title: displayTitle(for: phase.phase),
-                    value: durationText(for: phase.duration),
-                    picker: processPicker(for: phase.phase)
-                )
+                if phase.requiresManualContinue {
+                    readOnlyRow(title: displayTitle(for: phase.phase), value: copy.timeVisual)
+                } else {
+                    pickerRow(
+                        title: displayTitle(for: phase.phase),
+                        value: durationText(for: phase.duration),
+                        picker: processPicker(for: phase.phase)
+                    )
+                }
 
                 if index < phases.count - 1 {
                     divider
@@ -1592,6 +1603,25 @@ struct SetupView: View {
                     .darkroomFont(18, weight: isTestStripWashEnabled ? .bold : .semibold)
                 Spacer()
                 darkroomSwitch(isOn: isTestStripWashEnabled)
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var toningManualContinueToggleRow: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isToningManualContinue.toggle()
+            }
+        } label: {
+            HStack {
+                Text(copy.toningManualContinue)
+                    .darkroomFont(18, weight: isToningManualContinue ? .bold : .semibold)
+                Spacer()
+                darkroomSwitch(isOn: isToningManualContinue)
             }
             .foregroundStyle(DarkroomPalette.red)
             .padding(.horizontal, 18)
@@ -2186,6 +2216,7 @@ struct SetupView: View {
         transferAfterToningSeconds = Int(session.transferAfterToningDuration.rounded())
         washTemperature = session.washTemperatureCelsius
         isToningEnabled = session.isToningEnabled
+        isToningManualContinue = session.isToningManualContinue
         if let toner = session.toner {
             selectedToner = toner
             selectedTonerDilution = session.tonerDilution ?? toner.dilutions[0]
@@ -2221,6 +2252,7 @@ struct SetupView: View {
             transferAfterToningDuration: TimeInterval(transferAfterToningSeconds),
             washTemperatureCelsius: washTemperature,
             isToningEnabled: isToningEnabled,
+            isToningManualContinue: isToningManualContinue,
             toner: isToningEnabled ? selectedToner : nil,
             tonerDilution: isToningEnabled ? selectedTonerDilution : nil,
             toningTemperatureCelsius: selectedTonerTemperature,

@@ -739,12 +739,25 @@ enum DarkroomBrandFamily {
 public struct TimedProcessPhase: Identifiable, Codable, Hashable, Sendable {
     public let phase: ProcessPhase
     public let duration: TimeInterval
+    public let requiresManualContinue: Bool
 
     public var id: ProcessPhase { phase }
 
-    public init(phase: ProcessPhase, duration: TimeInterval) {
+    public init(phase: ProcessPhase, duration: TimeInterval, requiresManualContinue: Bool = false) {
         self.phase = phase
         self.duration = duration
+        self.requiresManualContinue = requiresManualContinue
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case phase, duration, requiresManualContinue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        phase = try container.decode(ProcessPhase.self, forKey: .phase)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        requiresManualContinue = try container.decodeIfPresent(Bool.self, forKey: .requiresManualContinue) ?? false
     }
 }
 
@@ -775,6 +788,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
     public var transferAfterToningDuration: TimeInterval
     public var washTemperatureCelsius: Double
     public var isToningEnabled: Bool
+    /// Visual (no printed time) toning waits for RESUME instead of counting down.
+    public var isToningManualContinue: Bool
     public var toner: Chemical?
     public var tonerDilution: ChemicalDilution?
     public var toningTemperatureCelsius: Double
@@ -808,6 +823,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         transferAfterToningDuration: TimeInterval = 10,
         washTemperatureCelsius: Double = 20,
         isToningEnabled: Bool = false,
+        isToningManualContinue: Bool = true,
         toner: Chemical? = nil,
         tonerDilution: ChemicalDilution? = nil,
         toningTemperatureCelsius: Double = 25,
@@ -842,6 +858,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         self.transferAfterToningDuration = transferAfterToningDuration
         self.washTemperatureCelsius = washTemperatureCelsius
         self.isToningEnabled = isToningEnabled
+        self.isToningManualContinue = isToningManualContinue
         self.toner = toner
         self.tonerDilution = tonerDilution
         self.toningTemperatureCelsius = toningTemperatureCelsius
@@ -871,7 +888,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         case developerVolumeMilliliters, stopBathVolumeMilliliters, fixerVolumeMilliliters
         case transferAfterDeveloperDuration, transferAfterStopBathDuration, transferAfterFixerDuration
         case transferAfterWashDuration, transferAfterToningDuration
-        case washTemperatureCelsius, isToningEnabled, toner, tonerDilution
+        case washTemperatureCelsius, isToningEnabled, isToningManualContinue, toner, tonerDilution
         case toningTemperatureCelsius, toningVolumeMilliliters, toningDuration
         case phaseDurationOverrides
     }
@@ -908,6 +925,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         washTemperatureCelsius = try container.decodeIfPresent(Double.self, forKey: .washTemperatureCelsius)
             ?? fixerTemperatureCelsius
         isToningEnabled = try container.decodeIfPresent(Bool.self, forKey: .isToningEnabled) ?? false
+        isToningManualContinue = try container.decodeIfPresent(Bool.self, forKey: .isToningManualContinue) ?? true
         toner = try container.decodeIfPresent(Chemical.self, forKey: .toner)
         tonerDilution = try container.decodeIfPresent(ChemicalDilution.self, forKey: .tonerDilution)
         toningTemperatureCelsius = try container.decodeIfPresent(Double.self, forKey: .toningTemperatureCelsius) ?? 25
@@ -992,10 +1010,14 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
                         duration: duration(for: .transferToToning, defaultDuration: transferAfterWashDuration)
                     )
                 )
+                let waitsForContinue = waitsForVisualToningContinue
                 phases.append(
                     TimedProcessPhase(
                         phase: .toning,
-                        duration: duration(for: .toning, defaultDuration: datasheetToningDuration)
+                        duration: waitsForContinue
+                            ? 0
+                            : duration(for: .toning, defaultDuration: datasheetToningDuration),
+                        requiresManualContinue: waitsForContinue
                     )
                 )
                 phases.append(
@@ -1020,10 +1042,11 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
     }
 
     /// Datasheet time for the chosen toner/dilution/paper/temperature.
-    /// Visual-only dilutions (no printed time) keep a 5-minute timer so the run can be watched.
+    /// Visual-only dilutions (no printed time) wait for RESUME, or run 3 minutes
+    /// if manual continue is off.
     private var datasheetToningDuration: TimeInterval {
         guard let toner, let tonerDilution, !tonerDilution.timeRules.isEmpty else {
-            return 300
+            return 180
         }
 
         return tonerDilution
@@ -1033,6 +1056,10 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
                 chemicalManufacturer: toner.manufacturer
             )
             .recommended
+    }
+
+    private var waitsForVisualToningContinue: Bool {
+        isToningManualContinue && (tonerDilution?.timeRules.isEmpty ?? true)
     }
 
     private var datasheetWashAfterToningDuration: TimeInterval {
