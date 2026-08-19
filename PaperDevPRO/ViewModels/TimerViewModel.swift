@@ -126,7 +126,7 @@ public final class TimerViewModel: ObservableObject {
             let wasFinished = run.state == .finished
 
             run.session = runSession
-            run.phases = runSession.resolvedPhases()
+            run.phases = runSession.resolvedPhases(forTestStrip: run.isTestStrip)
             run.lastTickDate = nil
             run.lastWarningSecond = nil
 
@@ -286,7 +286,7 @@ public final class TimerViewModel: ObservableObject {
         isTestStrip: Bool = false,
         state: TimerState = .idle
     ) -> PaperRun {
-        let phases = session.resolvedPhases()
+        let phases = session.resolvedPhases(forTestStrip: isTestStrip)
 
         return PaperRun(
             id: UUID(),

@@ -119,6 +119,33 @@ final class TimerViewModelTests: XCTestCase {
         XCTAssertTrue(run.isTestStrip)
         XCTAssertEqual(run.session.paper.id, stripPaper.id)
         XCTAssertEqual(run.session.paperSize.widthCentimeters, 2.5)
+        XCTAssertFalse(run.phases.contains { $0.phase == .transferToWash })
+        XCTAssertFalse(run.phases.contains { $0.phase == .wash })
+        XCTAssertEqual(run.phases.last?.phase, .fixer)
+    }
+
+    func testTestStripRunKeepsWashWhenEnabled() throws {
+        var session = DarkroomCatalog.defaultSession
+        session.isTestStripWashEnabled = true
+
+        let viewModel = TimerViewModel(session: session)
+        viewModel.addTestStripRun()
+
+        let run = try XCTUnwrap(viewModel.runs.first)
+        XCTAssertTrue(run.phases.contains { $0.phase == .transferToWash })
+        XCTAssertTrue(run.phases.contains { $0.phase == .wash })
+    }
+
+    func testPaperRunKeepsWashWhenTestStripWashIsOff() throws {
+        var session = DarkroomCatalog.defaultSession
+        session.isTestStripWashEnabled = false
+
+        let viewModel = TimerViewModel(session: session)
+        viewModel.addPaperRun()
+
+        let run = try XCTUnwrap(viewModel.runs.first)
+        XCTAssertTrue(run.phases.contains { $0.phase == .transferToWash })
+        XCTAssertTrue(run.phases.contains { $0.phase == .wash })
     }
 
     /// B13: resetting the project goes back to the catalog defaults and drops the sheets.

@@ -693,6 +693,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
     public var paperSize: PaperSize
     public var testStripPaper: Paper
     public var testStripPaperSize: PaperSize
+    /// When off (the default), a test strip ends after fixer: no last transfer, no wash.
+    public var isTestStripWashEnabled: Bool
     public var developer: Chemical
     public var developerDilution: ChemicalDilution
     public var stopBath: Chemical
@@ -723,6 +725,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         paperSize: PaperSize,
         testStripPaper: Paper? = nil,
         testStripPaperSize: PaperSize? = nil,
+        isTestStripWashEnabled: Bool = false,
         developer: Chemical,
         developerDilution: ChemicalDilution,
         stopBath: Chemical,
@@ -754,6 +757,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         self.testStripPaperSize = testStripPaperSize
             ?? (testStripPaper ?? paper).availableSizes.first
             ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
+        self.isTestStripWashEnabled = isTestStripWashEnabled
         self.developer = developer
         self.developerDilution = developerDilution
         self.stopBath = stopBath
@@ -784,13 +788,16 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         var copy = self
         copy.paper = testStripPaper
         copy.paperSize = testStripPaperSize
+        if !isTestStripWashEnabled {
+            copy.isToningEnabled = false
+        }
         return copy
     }
 
     // Zpětně kompatibilní dekódování – starší presety nemají nové klíče,
     // proto pro chybějící hodnoty dosadíme rozumné výchozí hodnoty.
     private enum CodingKeys: String, CodingKey {
-        case id, paper, paperSize, testStripPaper, testStripPaperSize
+        case id, paper, paperSize, testStripPaper, testStripPaperSize, isTestStripWashEnabled
         case developer, developerDilution
         case stopBath, stopBathDilution, fixer, fixerDilution
         case developerTemperatureCelsius, stopBathTemperatureCelsius, fixerTemperatureCelsius
@@ -810,6 +817,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         testStripPaperSize = try container.decodeIfPresent(PaperSize.self, forKey: .testStripPaperSize)
             ?? testStripPaper.availableSizes.first
             ?? PaperSize(widthCentimeters: 2.5, heightCentimeters: 10)
+        isTestStripWashEnabled = try container.decodeIfPresent(Bool.self, forKey: .isTestStripWashEnabled) ?? false
         developer = try container.decode(Chemical.self, forKey: .developer)
         developerDilution = try container.decode(ChemicalDilution.self, forKey: .developerDilution)
         stopBath = try container.decode(Chemical.self, forKey: .stopBath)
@@ -839,7 +847,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         ) ?? [:]
     }
 
-    public func resolvedPhases() -> [TimedProcessPhase] {
+    public func resolvedPhases(forTestStrip: Bool = false) -> [TimedProcessPhase] {
+        let includeWash = !forTestStrip || isTestStripWashEnabled
         var phases: [TimedProcessPhase] = [
             TimedProcessPhase(
                 phase: .developer,
@@ -887,24 +896,31 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
                         )
                         .recommended
                 )
-            ),
-            TimedProcessPhase(
-                phase: .transferToWash,
-                duration: duration(for: .transferToWash, defaultDuration: transferAfterFixerDuration)
-            ),
-            TimedProcessPhase(
-                phase: .wash,
-                duration: duration(for: .wash, defaultDuration: paper.washDuration(for: washTemperatureCelsius))
             )
         ]
 
-        if isToningEnabled {
+        if includeWash {
             phases.append(
                 TimedProcessPhase(
-                    phase: .toning,
-                    duration: duration(for: .toning, defaultDuration: toningDuration)
+                    phase: .transferToWash,
+                    duration: duration(for: .transferToWash, defaultDuration: transferAfterFixerDuration)
                 )
             )
+            phases.append(
+                TimedProcessPhase(
+                    phase: .wash,
+                    duration: duration(for: .wash, defaultDuration: paper.washDuration(for: washTemperatureCelsius))
+                )
+            )
+
+            if isToningEnabled {
+                phases.append(
+                    TimedProcessPhase(
+                        phase: .toning,
+                        duration: duration(for: .toning, defaultDuration: toningDuration)
+                    )
+                )
+            }
         }
 
         return phases

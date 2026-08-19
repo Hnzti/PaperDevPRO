@@ -177,4 +177,39 @@ final class DarkroomModelTests: XCTestCase {
         let legacyDecoded = try JSONDecoder().decode(ProcessingTimeRule.self, from: legacy)
         XCTAssertFalse(legacyDecoded.isEstimated)
     }
+
+    func testTestStripPhasesSkipWashByDefaultAndEndAfterFixer() {
+        let session = DarkroomCatalog.defaultSession
+        XCTAssertFalse(session.isTestStripWashEnabled)
+
+        let stripPhases = session.resolvedPhases(forTestStrip: true).map(\.phase)
+        XCTAssertEqual(stripPhases.last, .fixer)
+        XCTAssertFalse(stripPhases.contains(.transferToWash))
+        XCTAssertFalse(stripPhases.contains(.wash))
+        XCTAssertFalse(stripPhases.contains(.toning))
+
+        let paperPhases = session.resolvedPhases().map(\.phase)
+        XCTAssertTrue(paperPhases.contains(.transferToWash))
+        XCTAssertTrue(paperPhases.contains(.wash))
+    }
+
+    func testTestStripPhasesIncludeWashWhenEnabled() {
+        var session = DarkroomCatalog.defaultSession
+        session.isTestStripWashEnabled = true
+
+        let stripPhases = session.resolvedPhases(forTestStrip: true).map(\.phase)
+        XCTAssertTrue(stripPhases.contains(.transferToWash))
+        XCTAssertTrue(stripPhases.contains(.wash))
+    }
+
+    func testTestStripRunSessionTurnsOffToningWhenWashIsSkipped() throws {
+        var session = DarkroomCatalog.defaultSession
+        session.isToningEnabled = true
+        session.toner = try XCTUnwrap(DarkroomCatalog.toners.first)
+        session.tonerDilution = session.toner?.dilutions.first
+
+        let strip = session.testStripRunSession()
+        XCTAssertFalse(strip.isToningEnabled)
+        XCTAssertFalse(strip.resolvedPhases(forTestStrip: true).map(\.phase).contains(.toning))
+    }
 }

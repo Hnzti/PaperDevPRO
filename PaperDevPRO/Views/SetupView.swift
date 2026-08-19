@@ -18,6 +18,7 @@ struct SetupView: View {
     @State private var selectedPaperSize: PaperSize
     @State private var selectedTestStripPaper: Paper
     @State private var selectedTestStripPaperSize: PaperSize
+    @State private var isTestStripWashEnabled: Bool
     @State private var customWidthCentimeters: Double = 2.5
     @State private var customHeightCentimeters: Double = 10
     @State private var selectedDeveloper: Chemical
@@ -86,6 +87,7 @@ struct SetupView: View {
         _selectedPaperSize = State(initialValue: initialSession.paperSize)
         _selectedTestStripPaper = State(initialValue: initialSession.testStripPaper)
         _selectedTestStripPaperSize = State(initialValue: initialSession.testStripPaperSize)
+        _isTestStripWashEnabled = State(initialValue: initialSession.isTestStripWashEnabled)
         _customWidthCentimeters = State(initialValue: initialSession.testStripPaperSize.widthCentimeters)
         _customHeightCentimeters = State(initialValue: initialSession.testStripPaperSize.heightCentimeters)
         _selectedDeveloper = State(initialValue: initialSession.developer)
@@ -419,6 +421,7 @@ struct SetupView: View {
             paperSize: selectedPaperSize,
             testStripPaper: selectedTestStripPaper,
             testStripPaperSize: selectedTestStripPaperSize,
+            isTestStripWashEnabled: isTestStripWashEnabled,
             developer: selectedDeveloper,
             developerDilution: selectedDeveloperDilution,
             stopBath: selectedStopBath,
@@ -1239,6 +1242,8 @@ struct SetupView: View {
             pickerRow(title: copy.rowPaperType, value: selectedTestStripPaper.displayName, picker: .testStripPaper)
             divider
             pickerRow(title: copy.rowSize, value: sizeText(selectedTestStripPaperSize), picker: .testStripPaperSize)
+            divider
+            testStripWashToggleRow
         }
     }
 
@@ -1507,6 +1512,26 @@ struct SetupView: View {
 
     private func readOnlyRow(title: String, value: String) -> some View {
         rowContent(title: title, value: value, showsChevron: false)
+    }
+
+    private var testStripWashToggleRow: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isTestStripWashEnabled.toggle()
+            }
+        } label: {
+            HStack {
+                Text(copy.sectionWash)
+                    .darkroomFont(18, weight: isTestStripWashEnabled ? .bold : .semibold)
+                Spacer()
+                Image(systemName: isTestStripWashEnabled ? "checkmark.square.fill" : "square")
+                    .darkroomFont(22, weight: .bold)
+            }
+            .foregroundStyle(DarkroomPalette.red)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
     }
 
     private var toningToggleRow: some View {
@@ -1813,6 +1838,7 @@ struct SetupView: View {
         } else {
             selectedPaperSize = paper.availableSizes.first ?? previousSize
         }
+        applyTestStripPaperSelection(paper)
         syncChemistry(to: paper)
         normalizeTemperatures()
     }
@@ -2025,6 +2051,7 @@ struct SetupView: View {
         selectedPaperSize = session.paperSize
         selectedTestStripPaper = session.testStripPaper
         selectedTestStripPaperSize = session.testStripPaperSize
+        isTestStripWashEnabled = session.isTestStripWashEnabled
         selectedDeveloper = session.developer
         selectedDeveloperDilution = session.developerDilution
         selectedDeveloperTemperature = session.developerTemperatureCelsius
