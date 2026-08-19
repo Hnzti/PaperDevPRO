@@ -90,15 +90,21 @@ final class LocalizationTests: XCTestCase {
         )
     }
 
-    func testSystemLanguageFallsBackToEnglishAndSkipsBlockedLanguages() {
+    func testSystemLanguageFallsBackToEnglish() {
         XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["cs-CZ"]), .czech)
         XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["zh-Hans-CN"]), .chinese)
         XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["nn-NO"]), .norwegian)
         XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["hu-HU"]), .english)
-        XCTAssertEqual(
-            AppLanguage.preferredFromSystem(preferredLanguages: ["ru-RU", "sk-SK"]),
-            AppLanguage.isRussianTemporarilyBlocked ? .slovak : .russian
-        )
+        XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["ru-RU", "sk-SK"]), .russian)
+        XCTAssertEqual(AppLanguage.preferredFromSystem(preferredLanguages: ["uk-UA"]), .ukrainian)
+    }
+
+    func testRussianEasterEggShowsOnlyFromCzechAndUkrainian() {
+        XCTAssertTrue(AppLanguage.czech.showsRussianEasterEgg)
+        XCTAssertTrue(AppLanguage.ukrainian.showsRussianEasterEgg)
+        for language in AppLanguage.allCases where language != .czech && language != .ukrainian {
+            XCTAssertFalse(language.showsRussianEasterEgg, language.rawValue)
+        }
     }
 
     func testResetWordIsResetInEveryLanguage() {
@@ -127,18 +133,18 @@ final class LocalizationTests: XCTestCase {
         XCTAssertNotEqual(AppLanguage.slovak.displayName, AppLanguage.slovenian.displayName)
     }
 
-    func testRussianBlockedMessageIsUntranslated() {
+    func testRussianEasterEggMessageIsUntranslated() {
         XCTAssertEqual(
-            AppCopy(language: .czech).russianLanguageBlockedMessage,
-            AppInfo.russianBlockedMessage
+            AppCopy(language: .czech).russianEasterEggMessage,
+            AppInfo.russianEasterEggMessage
         )
         XCTAssertEqual(
-            AppCopy(language: .english).russianLanguageBlockedMessage,
-            AppInfo.russianBlockedMessage
+            AppCopy(language: .english).russianEasterEggMessage,
+            AppInfo.russianEasterEggMessage
         )
         XCTAssertEqual(
-            AppCopy(language: .ukrainian).russianLanguageBlockedMessage,
-            AppInfo.russianBlockedMessage
+            AppCopy(language: .ukrainian).russianEasterEggMessage,
+            AppInfo.russianEasterEggMessage
         )
     }
 

@@ -2496,7 +2496,7 @@ struct SettingsSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settingsStore = DarkroomSettingsStore.shared
     @State private var isLanguagePickerPresented = false
-    @State private var isRussianBlockedAlertPresented = false
+    @State private var isRussianEasterEggPresented = false
     var onBack: (() -> Void)? = nil
     var onOpenPrivacy: () -> Void = {}
     var onOpenSupport: () -> Void = {}
@@ -2661,9 +2661,9 @@ struct SettingsSheetView: View {
 
                     ForEach(AppLanguage.allCases) { language in
                         Button {
-                            if language.isTemporarilyBlocked {
+                            if language == .russian, settingsStore.language.showsRussianEasterEgg {
                                 withAnimation(.easeInOut(duration: 0.15)) {
-                                    isRussianBlockedAlertPresented = true
+                                    isRussianEasterEggPresented = true
                                 }
                             } else {
                                 settingsStore.language = language
@@ -2673,7 +2673,6 @@ struct SettingsSheetView: View {
                             HStack {
                                 Text(language.displayName)
                                     .darkroomFont(20, weight: language == settingsStore.language ? .bold : .regular)
-                                    .opacity(language.isTemporarilyBlocked ? 0.55 : 1)
                                 Spacer()
                                 if language == settingsStore.language {
                                     Image(systemName: "checkmark")
@@ -2702,32 +2701,34 @@ struct SettingsSheetView: View {
             }
             .scrollIndicators(.hidden)
 
-            if isRussianBlockedAlertPresented {
-                russianBlockedAlertOverlay
+            if isRussianEasterEggPresented {
+                russianEasterEggOverlay
             }
         }
         .preferredColorScheme(.dark)
     }
 
-    private var russianBlockedAlertOverlay: some View {
+    private var russianEasterEggOverlay: some View {
         ZStack {
             DarkroomPalette.black.opacity(0.9)
                 .ignoresSafeArea()
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.15)) {
-                        isRussianBlockedAlertPresented = false
+                        isRussianEasterEggPresented = false
                     }
                 }
 
             VStack(spacing: 20) {
-                Text(copy.russianLanguageBlockedMessage)
+                Text(copy.russianEasterEggMessage)
                     .darkroomFont(18, weight: .semibold)
                     .multilineTextAlignment(.center)
                     .opacity(0.95)
 
                 Button {
+                    settingsStore.language = .russian
+                    isLanguagePickerPresented = false
                     withAnimation(.easeInOut(duration: 0.15)) {
-                        isRussianBlockedAlertPresented = false
+                        isRussianEasterEggPresented = false
                     }
                 } label: {
                     Text(copy.confirmYes)

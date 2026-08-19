@@ -7,7 +7,7 @@ enum AppInfo {
     static let supportURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/issues")!
     static let privacyURL = URL(string: "https://github.com/Hnzti/PaperDevPRO/blob/main/docs/privacy.html")!
     /// Same sentence in every language – do not translate.
-    static let russianBlockedMessage = "Русский военный корабль, иди на хуй!"
+    static let russianEasterEggMessage = "Русский военный корабль, иди на хуй!"
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
@@ -31,11 +31,9 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    /// Flip to `false` after the war to re-enable Russian.
-    static let isRussianTemporarilyBlocked = true
-
-    var isTemporarilyBlocked: Bool {
-        self == .russian && Self.isRussianTemporarilyBlocked
+    /// Czech and Ukrainian see the Snake Island line once, then Russian turns on.
+    var showsRussianEasterEgg: Bool {
+        self == .czech || self == .ukrainian
     }
 
     var displayName: String {
@@ -66,11 +64,9 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         preferredLanguages: [String] = Locale.preferredLanguages
     ) -> AppLanguage {
         for identifier in preferredLanguages {
-            guard let language = AppLanguage(systemIdentifier: identifier),
-                  !language.isTemporarilyBlocked else {
-                continue
+            if let language = AppLanguage(systemIdentifier: identifier) {
+                return language
             }
-            return language
         }
         return .english
     }
@@ -255,7 +251,7 @@ struct AppCopy {
     var processWashAfterToning: String { t("processWashAfterToning") }
     var ready: String { t("ready") }
     var reset: String { t("reset") }
-    var russianLanguageBlockedMessage: String { AppInfo.russianBlockedMessage }
+    var russianEasterEggMessage: String { AppInfo.russianEasterEggMessage }
     var privacyPolicy: String { t("privacyPolicy") }
     var privacyEffectiveDate: String { t("privacyEffectiveDate") }
     var support: String { t("support") }

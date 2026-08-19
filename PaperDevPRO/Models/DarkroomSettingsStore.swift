@@ -96,10 +96,6 @@ final class DarkroomSettingsStore: ObservableObject {
 
     @Published var language: AppLanguage {
         didSet {
-            if language.isTemporarilyBlocked {
-                language = oldValue.isTemporarilyBlocked ? .english : oldValue
-                return
-            }
             defaults.set(language.rawValue, forKey: Keys.language)
         }
     }
@@ -161,8 +157,7 @@ final class DarkroomSettingsStore: ObservableObject {
             self.unitSystem = Locale.current.measurementSystem == .metric ? .metric : .imperial
         }
 
-        if let language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)),
-           !language.isTemporarilyBlocked {
+        if let language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
             self.language = language
         } else {
             self.language = AppLanguage.preferredFromSystem()
