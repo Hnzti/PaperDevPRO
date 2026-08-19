@@ -19,6 +19,11 @@ struct PaperDevPROApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(.dark)
+                #if os(iOS)
+                .supportedInterfaceOrientations(
+                    UIDevice.current.userInterfaceIdiom == .pad ? .all : .portrait
+                )
+                #endif
         }
     }
 }
