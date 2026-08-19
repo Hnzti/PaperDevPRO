@@ -1763,8 +1763,18 @@ struct SetupView: View {
     }
 
     private func documentedDilutions(for chemical: Chemical) -> [ChemicalDilution] {
-        let applicable = chemical.dilutions.filter {
-            $0.isApplicable(for: selectedPaper, chemicalManufacturer: chemical.manufacturer)
+        let applicable = chemical.dilutions.filter { dilution in
+            if dilution.isApplicable(for: selectedPaper, chemicalManufacturer: chemical.manufacturer) {
+                return true
+            }
+
+            guard chemical.role == .toner else {
+                return false
+            }
+
+            return dilution.capacityRules.contains {
+                $0.paperID == nil && $0.paperType == selectedPaper.type
+            }
         }
         return applicable.isEmpty ? chemical.dilutions : applicable
     }

@@ -622,13 +622,15 @@ public struct Chemical: Identifiable, Codable, Hashable, Sendable {
             return true
         }
 
-        guard role == .toner,
-              DarkroomBrandFamily.sharesDocumentation(manufacturer, paper.manufacturer) else {
+        // Tónovač s vydatností nebo časem podle typu papíru je použitelný
+        // i na papír jiné značky (datasheet Selenium: RC i FB obecně).
+        guard role == .toner else {
             return false
         }
 
         return dilutions.contains { dilution in
-            dilution.capacityRules.contains { $0.paperType == paper.type }
+            dilution.timeRules.contains { $0.paperID == nil && $0.paperType == paper.type }
+                || dilution.capacityRules.contains { $0.paperID == nil && $0.paperType == paper.type }
         }
     }
 

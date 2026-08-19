@@ -866,6 +866,41 @@ enum ChemicalCatalog {
                 )
             ]
         ),
+        Chemical(
+            id: "ilford-harman-selenium",
+            manufacturer: "Ilford",
+            name: "HARMAN Selenium",
+            role: .toner,
+            dilutions: [
+                // Dish/tray, nominally 20 °C. Normal toning is visual — no printed time.
+                // Capacity: at least 25 sheets of 8×10" (0.051562 m²) per litre at 1+3
+                // → 1.3 m²/L, RC and FB alike.
+                ChemicalDilution(
+                    ratio: "1+3",
+                    timeRules: [],
+                    capacityRules: [
+                        ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 1.3),
+                        ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.3)
+                    ]
+                ),
+                // Archival protection with minimal tone change: 2–4 minutes.
+                ChemicalDilution(
+                    ratio: "1+20",
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 120, maximum: 240)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 20,
+                            timeRange: TimeRange(minimum: 120, maximum: 240)
+                        )
+                    ]
+                )
+            ]
+        ),
     ]
 
     // MARK: - Kentmere (dish/tray, 20 °C)

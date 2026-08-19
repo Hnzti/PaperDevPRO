@@ -1333,6 +1333,56 @@
           "capacityRules" : [
             {
               "paperType" : "RC",
+              "squareMetersPerLiter" : 1.3
+            },
+            {
+              "paperType" : "FB",
+              "squareMetersPerLiter" : 1.3
+            }
+          ],
+          "ratio" : "1+3",
+          "timeRules" : [
+
+          ]
+        },
+        {
+          "capacityRules" : [
+
+          ],
+          "ratio" : "1+20",
+          "timeRules" : [
+            {
+              "isEstimated" : false,
+              "paperType" : "RC",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            },
+            {
+              "isEstimated" : false,
+              "paperType" : "FB",
+              "temperatureCelsius" : 20,
+              "timeRange" : {
+                "maximum" : 240,
+                "minimum" : 120
+              }
+            }
+          ]
+        }
+      ],
+      "id" : "ilford-harman-selenium",
+      "manufacturer" : "Ilford",
+      "name" : "HARMAN Selenium",
+      "role" : "toner"
+    },
+    {
+      "dilutions" : [
+        {
+          "capacityRules" : [
+            {
+              "paperType" : "RC",
               "squareMetersPerLiter" : 6.4
             },
             {

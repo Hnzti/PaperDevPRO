@@ -163,4 +163,30 @@ final class DarkroomCatalogTests: XCTestCase {
         )
         XCTAssertTrue(fixer.isApplicable(for: paper))
     }
+
+    /// HARMAN Selenium TDS: 1+3 is visual toning (25× 8×10" / L), 1+20 is 2–4 min
+    /// archival protection. The toner is for all RC and FB papers.
+    func testHarmanSeleniumMatchesDatasheet() throws {
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "ilford-harman-selenium"))
+        XCTAssertEqual(toner.role, .toner)
+        XCTAssertEqual(toner.dilutions.map(\.ratio), ["1+3", "1+20"])
+
+        let normal = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+3" })
+        XCTAssertTrue(normal.timeRules.isEmpty)
+        XCTAssertEqual(normal.capacityRules.map(\.squareMetersPerLiter), [1.3, 1.3])
+
+        let archival = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+20" })
+        let ilfordPaper = try XCTUnwrap(DarkroomCatalog.paper(id: "ilford-multigrade-rc-deluxe"))
+        let fomaPaper = try XCTUnwrap(DarkroomCatalog.paper(id: "foma-fomabrom-variant"))
+        XCTAssertEqual(
+            archival.timeRange(
+                for: ilfordPaper,
+                temperatureCelsius: 20,
+                chemicalManufacturer: toner.manufacturer
+            ),
+            TimeRange(minimum: 120, maximum: 240)
+        )
+        XCTAssertTrue(toner.isApplicable(for: ilfordPaper))
+        XCTAssertTrue(toner.isApplicable(for: fomaPaper))
+    }
 }
