@@ -212,4 +212,40 @@ final class DarkroomModelTests: XCTestCase {
         XCTAssertFalse(strip.isToningEnabled)
         XCTAssertFalse(strip.resolvedPhases(forTestStrip: true).map(\.phase).contains(.toning))
     }
+
+    func testToningPhasesUseDatasheetTimeAndAddWashAfterToning() throws {
+        var session = DarkroomCatalog.defaultSession
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "ilford-harman-selenium"))
+        let archival = try XCTUnwrap(toner.dilutions.first { $0.ratio == "1+20" })
+        session.isToningEnabled = true
+        session.toner = toner
+        session.tonerDilution = archival
+        session.toningTemperatureCelsius = 20
+        session.toningDuration = 300
+        session.paper = try XCTUnwrap(DarkroomCatalog.paper(id: "ilford-multigrade-rc-deluxe"))
+
+        let phases = session.resolvedPhases()
+        XCTAssertEqual(phases.map(\.phase).suffix(5), [
+            .wash,
+            .transferToToning,
+            .toning,
+            .transferToWashAfterToning,
+            .washAfterToning
+        ])
+
+        let toning = try XCTUnwrap(phases.first { $0.phase == .toning })
+        XCTAssertEqual(toning.duration, 180)
+        let washAfter = try XCTUnwrap(phases.first { $0.phase == .washAfterToning })
+        XCTAssertEqual(washAfter.duration, 2 * 60)
+    }
+
+    func testPaperRunWithoutToningDoesNotAddToningPhases() {
+        let session = DarkroomCatalog.defaultSession
+        XCTAssertFalse(session.isToningEnabled)
+        let phases = session.resolvedPhases().map(\.phase)
+        XCTAssertFalse(phases.contains(.transferToToning))
+        XCTAssertFalse(phases.contains(.toning))
+        XCTAssertFalse(phases.contains(.washAfterToning))
+        XCTAssertEqual(phases.last, .wash)
+    }
 }

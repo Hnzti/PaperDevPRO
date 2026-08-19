@@ -229,7 +229,9 @@ struct AppCopy {
     var pickProcessTransferToFixerTime: String { t("pickProcessTransferToFixerTime") }
     var pickProcessTransferToStopBathTime: String { t("pickProcessTransferToStopBathTime") }
     var pickProcessTransferToWashTime: String { t("pickProcessTransferToWashTime") }
+    var pickProcessTransferToToningTime: String { t("pickProcessTransferToToningTime") }
     var pickProcessWashTime: String { t("pickProcessWashTime") }
+    var pickProcessWashAfterToningTime: String { t("pickProcessWashAfterToningTime") }
     var pickSize: String { t("pickSize") }
     var pickStopBath: String { t("pickStopBath") }
     var pickStopBathDilution: String { t("pickStopBathDilution") }
@@ -243,11 +245,14 @@ struct AppCopy {
     var pickTransferToFixer: String { t("pickTransferToFixer") }
     var pickTransferToStopBath: String { t("pickTransferToStopBath") }
     var pickTransferToWash: String { t("pickTransferToWash") }
+    var pickTransferToToning: String { t("pickTransferToToning") }
     var pickWaterTemperature: String { t("pickWaterTemperature") }
     var presetsTitle: String { t("presetsTitle") }
     var processTransferToFixer: String { t("processTransferToFixer") }
     var processTransferToStopBath: String { t("processTransferToStopBath") }
     var processTransferToWash: String { t("processTransferToWash") }
+    var processTransferToToning: String { t("processTransferToToning") }
+    var processWashAfterToning: String { t("processWashAfterToning") }
     var ready: String { t("ready") }
     var reset: String { t("reset") }
     var russianLanguageBlockedMessage: String { AppInfo.russianBlockedMessage }
@@ -313,6 +318,7 @@ struct AppCopy {
     var temperatureLabel: String { t("temperatureLabel") }
     var temperatureUnit: String { t("temperatureUnit") }
     var testStrip: String { t("testStrip") }
+    var timeVisual: String { t("timeVisual") }
     var unitSystem: String { t("unitSystem") }
     var unitSystemImperial: String { t("unitSystemImperial") }
     var unitSystemMetric: String { t("unitSystemMetric") }
@@ -340,10 +346,11 @@ struct AppCopy {
     func phaseTitle(_ phase: ProcessPhase) -> String {
         switch phase {
         case .developer: return t("phaseDeveloper")
-        case .transferToStopBath, .transferToFixer, .transferToWash: return t("phaseTransfer")
+        case .transferToStopBath, .transferToFixer, .transferToWash, .transferToToning, .transferToWashAfterToning:
+            return t("phaseTransfer")
         case .stopBath: return t("phaseStopBath")
         case .fixer: return t("phaseFixer")
-        case .wash: return t("phaseWash")
+        case .wash, .washAfterToning: return t("phaseWash")
         case .toning: return t("phaseToning")
         }
     }

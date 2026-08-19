@@ -10,7 +10,7 @@ final class CatalogExport: XCTestCase {
     func testBundledCatalogMatchesSwiftAuthoringSource() throws {
         let authored = DarkroomCatalogFile(
             schemaVersion: DarkroomCatalogFile.supportedSchemaVersion,
-            revision: "2026-08-18",
+            revision: "2026-08-19",
             papers: PaperCatalog.all,
             chemicals: ChemicalCatalog.all
         )

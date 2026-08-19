@@ -162,6 +162,31 @@ public struct WashRule: Codable, Hashable, Sendable {
     }
 }
 
+/// Post-toning wash from the toner datasheet (RC vs FB). When a toner has none,
+/// the paper's ordinary wash rules are used.
+public struct PostToningWashRule: Codable, Hashable, Sendable {
+    public let paperType: PaperType
+    public let minimumTemperatureCelsius: Double?
+    public let duration: TimeInterval
+
+    public init(
+        paperType: PaperType,
+        minimumTemperatureCelsius: Double? = nil,
+        duration: TimeInterval
+    ) {
+        self.paperType = paperType
+        self.minimumTemperatureCelsius = minimumTemperatureCelsius
+        self.duration = duration
+    }
+
+    public func matches(temperatureCelsius: Double) -> Bool {
+        if let minimumTemperatureCelsius, temperatureCelsius < minimumTemperatureCelsius {
+            return false
+        }
+        return true
+    }
+}
+
 public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case developer
     case transferToStopBath
@@ -170,14 +195,17 @@ public enum ProcessPhase: String, CaseIterable, Codable, Hashable, Identifiable,
     case fixer
     case transferToWash
     case wash
+    case transferToToning
     case toning
+    case transferToWashAfterToning
+    case washAfterToning
 
     public var id: String { rawValue }
 
     /// Titles shown to the user come from `AppCopy.phaseTitle(_:)`, never from the model.
     public var isTransfer: Bool {
         switch self {
-        case .transferToStopBath, .transferToFixer, .transferToWash:
+        case .transferToStopBath, .transferToFixer, .transferToWash, .transferToToning, .transferToWashAfterToning:
             return true
         default:
             return false
@@ -212,6 +240,7 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable, Sendable {
     public let ratio: String
     public let timeRules: [ProcessingTimeRule]
     public let capacityRules: [ChemicalCapacityRule]
+    public let postToningWashRules: [PostToningWashRule]
 
     public var id: String { ratio }
 
@@ -227,11 +256,43 @@ public struct ChemicalDilution: Identifiable, Codable, Hashable, Sendable {
     public init(
         ratio: String,
         timeRules: [ProcessingTimeRule] = [],
-        capacityRules: [ChemicalCapacityRule] = []
+        capacityRules: [ChemicalCapacityRule] = [],
+        postToningWashRules: [PostToningWashRule] = []
     ) {
         self.ratio = ratio
         self.timeRules = timeRules
         self.capacityRules = capacityRules
+        self.postToningWashRules = postToningWashRules
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case ratio, timeRules, capacityRules, postToningWashRules
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ratio = try container.decode(String.self, forKey: .ratio)
+        timeRules = try container.decodeIfPresent([ProcessingTimeRule].self, forKey: .timeRules) ?? []
+        capacityRules = try container.decodeIfPresent([ChemicalCapacityRule].self, forKey: .capacityRules) ?? []
+        postToningWashRules = try container.decodeIfPresent(
+            [PostToningWashRule].self,
+            forKey: .postToningWashRules
+        ) ?? []
+    }
+
+    /// Wash after toning from this dilution's datasheet. `nil` means use the paper wash.
+    public func postToningWashDuration(
+        for paper: Paper,
+        waterTemperatureCelsius: Double
+    ) -> TimeInterval? {
+        let matching = postToningWashRules.filter { $0.paperType == paper.type }
+        guard !matching.isEmpty else { return nil }
+
+        if let rule = matching.first(where: { $0.matches(temperatureCelsius: waterTemperatureCelsius) }) {
+            return rule.duration
+        }
+
+        return matching.map(\.duration).max()
     }
 
     public func availableTemperatures(for paper: Paper, chemicalManufacturer: String) -> [Double] {
@@ -710,6 +771,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
     public var transferAfterDeveloperDuration: TimeInterval
     public var transferAfterStopBathDuration: TimeInterval
     public var transferAfterFixerDuration: TimeInterval
+    public var transferAfterWashDuration: TimeInterval
+    public var transferAfterToningDuration: TimeInterval
     public var washTemperatureCelsius: Double
     public var isToningEnabled: Bool
     public var toner: Chemical?
@@ -741,6 +804,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         transferAfterDeveloperDuration: TimeInterval = 10,
         transferAfterStopBathDuration: TimeInterval = 10,
         transferAfterFixerDuration: TimeInterval = 10,
+        transferAfterWashDuration: TimeInterval = 10,
+        transferAfterToningDuration: TimeInterval = 10,
         washTemperatureCelsius: Double = 20,
         isToningEnabled: Bool = false,
         toner: Chemical? = nil,
@@ -773,6 +838,8 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         self.transferAfterDeveloperDuration = transferAfterDeveloperDuration
         self.transferAfterStopBathDuration = transferAfterStopBathDuration
         self.transferAfterFixerDuration = transferAfterFixerDuration
+        self.transferAfterWashDuration = transferAfterWashDuration
+        self.transferAfterToningDuration = transferAfterToningDuration
         self.washTemperatureCelsius = washTemperatureCelsius
         self.isToningEnabled = isToningEnabled
         self.toner = toner
@@ -803,6 +870,7 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         case developerTemperatureCelsius, stopBathTemperatureCelsius, fixerTemperatureCelsius
         case developerVolumeMilliliters, stopBathVolumeMilliliters, fixerVolumeMilliliters
         case transferAfterDeveloperDuration, transferAfterStopBathDuration, transferAfterFixerDuration
+        case transferAfterWashDuration, transferAfterToningDuration
         case washTemperatureCelsius, isToningEnabled, toner, tonerDilution
         case toningTemperatureCelsius, toningVolumeMilliliters, toningDuration
         case phaseDurationOverrides
@@ -833,6 +901,10 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
         transferAfterDeveloperDuration = try container.decode(TimeInterval.self, forKey: .transferAfterDeveloperDuration)
         transferAfterStopBathDuration = try container.decode(TimeInterval.self, forKey: .transferAfterStopBathDuration)
         transferAfterFixerDuration = try container.decode(TimeInterval.self, forKey: .transferAfterFixerDuration)
+        transferAfterWashDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .transferAfterWashDuration)
+            ?? transferAfterFixerDuration
+        transferAfterToningDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .transferAfterToningDuration)
+            ?? transferAfterFixerDuration
         washTemperatureCelsius = try container.decodeIfPresent(Double.self, forKey: .washTemperatureCelsius)
             ?? fixerTemperatureCelsius
         isToningEnabled = try container.decodeIfPresent(Bool.self, forKey: .isToningEnabled) ?? false
@@ -916,14 +988,58 @@ public struct DevelopmentSession: Identifiable, Codable, Hashable, Sendable {
             if isToningEnabled {
                 phases.append(
                     TimedProcessPhase(
+                        phase: .transferToToning,
+                        duration: duration(for: .transferToToning, defaultDuration: transferAfterWashDuration)
+                    )
+                )
+                phases.append(
+                    TimedProcessPhase(
                         phase: .toning,
-                        duration: duration(for: .toning, defaultDuration: toningDuration)
+                        duration: duration(for: .toning, defaultDuration: datasheetToningDuration)
+                    )
+                )
+                phases.append(
+                    TimedProcessPhase(
+                        phase: .transferToWashAfterToning,
+                        duration: duration(
+                            for: .transferToWashAfterToning,
+                            defaultDuration: transferAfterToningDuration
+                        )
+                    )
+                )
+                phases.append(
+                    TimedProcessPhase(
+                        phase: .washAfterToning,
+                        duration: duration(for: .washAfterToning, defaultDuration: datasheetWashAfterToningDuration)
                     )
                 )
             }
         }
 
         return phases
+    }
+
+    /// Datasheet time for the chosen toner/dilution/paper/temperature.
+    /// Visual-only dilutions (no printed time) keep a 5-minute timer so the run can be watched.
+    private var datasheetToningDuration: TimeInterval {
+        guard let toner, let tonerDilution, !tonerDilution.timeRules.isEmpty else {
+            return 300
+        }
+
+        return tonerDilution
+            .timeRange(
+                for: paper,
+                temperatureCelsius: toningTemperatureCelsius,
+                chemicalManufacturer: toner.manufacturer
+            )
+            .recommended
+    }
+
+    private var datasheetWashAfterToningDuration: TimeInterval {
+        tonerDilution?.postToningWashDuration(
+            for: paper,
+            waterTemperatureCelsius: washTemperatureCelsius
+        ) ?? paper.washDuration(for: washTemperatureCelsius)
     }
 
     private func duration(for phase: ProcessPhase, defaultDuration: TimeInterval) -> TimeInterval {

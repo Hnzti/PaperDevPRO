@@ -36,6 +36,8 @@ struct SetupView: View {
     @State private var transferAfterDeveloperSeconds: Int
     @State private var transferAfterStopBathSeconds: Int
     @State private var transferAfterFixerSeconds: Int
+    @State private var transferAfterWashSeconds: Int
+    @State private var transferAfterToningSeconds: Int
     @State private var washTemperature: Double
     @State private var isToningEnabled: Bool
     @State private var selectedToner: Chemical
@@ -47,6 +49,8 @@ struct SetupView: View {
     @State private var isDeveloperTransferSynced = true
     @State private var isStopBathTransferSynced = true
     @State private var isFixerTransferSynced = true
+    @State private var isWashTransferSynced = true
+    @State private var isToningTransferSynced = true
     @State private var isDeveloperUsageSynced = true
     @State private var isStopBathUsageSynced = true
     @State private var isFixerUsageSynced = true
@@ -105,6 +109,8 @@ struct SetupView: View {
         _transferAfterDeveloperSeconds = State(initialValue: Int(initialSession.transferAfterDeveloperDuration.rounded()))
         _transferAfterStopBathSeconds = State(initialValue: Int(initialSession.transferAfterStopBathDuration.rounded()))
         _transferAfterFixerSeconds = State(initialValue: Int(initialSession.transferAfterFixerDuration.rounded()))
+        _transferAfterWashSeconds = State(initialValue: Int(initialSession.transferAfterWashDuration.rounded()))
+        _transferAfterToningSeconds = State(initialValue: Int(initialSession.transferAfterToningDuration.rounded()))
         _washTemperature = State(initialValue: initialSession.washTemperatureCelsius)
         _isToningEnabled = State(initialValue: initialSession.isToningEnabled)
         let toner = initialSession.toner ?? DarkroomCatalog.toners.first ?? initialSession.fixer
@@ -229,7 +235,8 @@ struct SetupView: View {
             fixerTemperature: selectedFixerTemperature,
             washTemperature: washTemperature,
             tonerID: selectedToner.id,
-            tonerDilutionID: selectedTonerDilution.id
+            tonerDilutionID: selectedTonerDilution.id,
+            tonerTemperature: selectedTonerTemperature
         )
     }
 
@@ -257,9 +264,13 @@ struct SetupView: View {
         }
         if old.washTemperature != new.washTemperature {
             phaseDurationOverrides[.wash] = nil
+            phaseDurationOverrides[.washAfterToning] = nil
         }
-        if old.tonerID != new.tonerID || old.tonerDilutionID != new.tonerDilutionID {
+        if old.tonerID != new.tonerID
+            || old.tonerDilutionID != new.tonerDilutionID
+            || old.tonerTemperature != new.tonerTemperature {
             phaseDurationOverrides[.toning] = nil
+            phaseDurationOverrides[.washAfterToning] = nil
         }
     }
 
@@ -437,6 +448,8 @@ struct SetupView: View {
             transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
             transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
             transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds),
+            transferAfterWashDuration: TimeInterval(transferAfterWashSeconds),
+            transferAfterToningDuration: TimeInterval(transferAfterToningSeconds),
             washTemperatureCelsius: washTemperature,
             isToningEnabled: isToningEnabled,
             toner: isToningEnabled ? selectedToner : nil,
@@ -707,6 +720,10 @@ struct SetupView: View {
                     ) {
                         selectedToner = toner
                         selectedTonerDilution = toner.preferredDilution(for: selectedPaper)
+                        selectedTonerTemperature = firstTemperature(
+                            for: selectedTonerDilution,
+                            chemicalManufacturer: toner.manufacturer
+                        )
                         activePicker = nil
                     }
                 }
@@ -719,23 +736,33 @@ struct SetupView: View {
                 chemicalManufacturer: selectedToner.manufacturer
             ) { dilution in
                 selectedTonerDilution = dilution
+                selectedTonerTemperature = firstTemperature(
+                    for: dilution,
+                    chemicalManufacturer: selectedToner.manufacturer
+                )
             }
         case .tonerVolume:
             volumePickerSheet(title: copy.pickTonerVolume, milliliters: $tonerVolumeMilliliters)
         case .tonerTemperature:
             temperatureSheet(
                 title: copy.pickToningBathTemperature,
-                temperatures: settingsStore.temperaturePickerValues(
-                    celsius: Array(stride(from: 15.0, through: 35.0, by: 1.0))
+                temperatures: availableTemperatures(
+                    for: selectedTonerDilution,
+                    chemicalManufacturer: selectedToner.manufacturer
                 ),
                 selectedTemperature: selectedTonerTemperature
             ) { temperature in
                 selectedTonerTemperature = temperature
             }
-        case .toningDuration:
+        case .transferAfterWash:
             durationPickerSheet(
-                title: copy.pickToningTime,
-                totalSeconds: $toningSeconds
+                title: copy.pickTransferToToning,
+                totalSeconds: transferSecondsBinding(for: .afterWash)
+            )
+        case .transferAfterToning:
+            durationPickerSheet(
+                title: copy.pickTransferToWash,
+                totalSeconds: transferSecondsBinding(for: .afterToning)
             )
         case .processDeveloperDuration:
             processDurationPickerSheet(title: copy.pickProcessDeveloperTime, phase: .developer)
@@ -751,8 +778,17 @@ struct SetupView: View {
             processDurationPickerSheet(title: copy.pickProcessTransferToWashTime, phase: .transferToWash)
         case .processWashDuration:
             processDurationPickerSheet(title: copy.pickProcessWashTime, phase: .wash)
+        case .processTransferToToningDuration:
+            processDurationPickerSheet(title: copy.pickProcessTransferToToningTime, phase: .transferToToning)
         case .processToningDuration:
             processDurationPickerSheet(title: copy.pickToningTime, phase: .toning)
+        case .processTransferToWashAfterToningDuration:
+            processDurationPickerSheet(
+                title: copy.pickProcessTransferToWashTime,
+                phase: .transferToWashAfterToning
+            )
+        case .processWashAfterToningDuration:
+            processDurationPickerSheet(title: copy.pickProcessWashAfterToningTime, phase: .washAfterToning)
         }
     }
 
@@ -766,13 +802,16 @@ struct SetupView: View {
         selectionSheet(title: title) {
             ForEach(dilutions) { dilution in
                 let temperature = firstTemperature(for: dilution, chemicalManufacturer: chemicalManufacturer)
-                selectionButton(
-                    title: dilution.ratio,
-                    subtitle: dilution.timeRange(
+                let subtitle = dilution.timeRules.isEmpty
+                    ? copy.timeVisual
+                    : dilution.timeRange(
                         for: selectedPaper,
                         temperatureCelsius: temperature,
                         chemicalManufacturer: chemicalManufacturer
-                    ).displayText,
+                    ).displayText
+                selectionButton(
+                    title: dilution.ratio,
+                    subtitle: subtitle,
                     isSelected: dilution.id == selectedDilution.id
                 ) {
                     onSelect(dilution)
@@ -1394,6 +1433,17 @@ struct SetupView: View {
                 title: copy.rowWashTime,
                 value: durationText(for: selectedPaper.washDuration(for: washTemperature))
             )
+
+            if isToningEnabled {
+                divider
+                transferRow(
+                    value: durationText(for: TimeInterval(transferAfterWashSeconds)),
+                    picker: .transferAfterWash,
+                    isSynced: isWashTransferSynced
+                ) {
+                    toggleSync(for: .afterWash)
+                }
+            }
         }
     }
 
@@ -1411,9 +1461,18 @@ struct SetupView: View {
                 divider
                 mixRows(dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
                 divider
-                pickerRow(title: copy.rowTemperature, value: temperatureText(selectedTonerTemperature), picker: .tonerTemperature)
+                temperatureRow(
+                    dilution: selectedTonerDilution,
+                    chemicalManufacturer: selectedToner.manufacturer,
+                    temperature: selectedTonerTemperature,
+                    picker: .tonerTemperature
+                )
                 divider
-                pickerRow(title: copy.rowTime, value: durationText(for: TimeInterval(toningSeconds)), picker: .toningDuration)
+                timeRow(
+                    dilution: selectedTonerDilution,
+                    chemicalManufacturer: selectedToner.manufacturer,
+                    temperatureCelsius: selectedTonerTemperature
+                )
                 divider
                 capacityRow(chemical: selectedToner, dilution: selectedTonerDilution, totalMilliliters: tonerVolumeMilliliters)
                 divider
@@ -1425,6 +1484,14 @@ struct SetupView: View {
                     isTonerUsageSynced.toggle()
                 } onReset: {
                     usageStore.reset(chemical: selectedToner, dilution: selectedTonerDilution)
+                }
+                divider
+                transferRow(
+                    value: durationText(for: TimeInterval(transferAfterToningSeconds)),
+                    picker: .transferAfterToning,
+                    isSynced: isToningTransferSynced
+                ) {
+                    toggleSync(for: .afterToning)
                 }
             }
         }
@@ -1524,8 +1591,7 @@ struct SetupView: View {
                 Text(copy.sectionWash)
                     .darkroomFont(18, weight: isTestStripWashEnabled ? .bold : .semibold)
                 Spacer()
-                Image(systemName: isTestStripWashEnabled ? "checkmark.square.fill" : "square")
-                    .darkroomFont(22, weight: .bold)
+                darkroomSwitch(isOn: isTestStripWashEnabled)
             }
             .foregroundStyle(DarkroomPalette.red)
             .padding(.horizontal, 18)
@@ -1538,6 +1604,12 @@ struct SetupView: View {
         Button {
             withAnimation(.easeInOut(duration: 0.15)) {
                 isToningEnabled.toggle()
+                if isToningEnabled {
+                    selectedTonerTemperature = firstTemperature(
+                        for: selectedTonerDilution,
+                        chemicalManufacturer: selectedToner.manufacturer
+                    )
+                }
             }
         } label: {
             HStack {
@@ -1572,18 +1644,21 @@ struct SetupView: View {
         chemicalManufacturer: String,
         temperatureCelsius: Double
     ) -> some View {
-        let documented = dilution.isDocumented(
+        let hasPrintedTime = !dilution.timeRules.isEmpty
+        let documented = hasPrintedTime && dilution.isDocumented(
             for: selectedPaper,
             temperatureCelsius: temperatureCelsius,
             chemicalManufacturer: chemicalManufacturer
         )
-        let value = dilution
-            .timeRange(
-                for: selectedPaper,
-                temperatureCelsius: temperatureCelsius,
-                chemicalManufacturer: chemicalManufacturer
-            )
-            .displayText
+        let value = hasPrintedTime
+            ? dilution
+                .timeRange(
+                    for: selectedPaper,
+                    temperatureCelsius: temperatureCelsius,
+                    chemicalManufacturer: chemicalManufacturer
+                )
+                .displayText
+            : copy.timeVisual
 
         return HStack(spacing: 12) {
             Text(copy.rowTime)
@@ -1762,6 +1837,10 @@ struct SetupView: View {
             for: selectedFixerDilution,
             chemicalManufacturer: selectedFixer.manufacturer
         )
+        selectedTonerTemperature = firstTemperature(
+            for: selectedTonerDilution,
+            chemicalManufacturer: selectedToner.manufacturer
+        )
     }
 
     private var filteredPapers: [Paper] {
@@ -1894,6 +1973,10 @@ struct SetupView: View {
                let toner = DarkroomCatalog.toners.first(where: { $0.isApplicable(for: paper) }) {
                 selectedToner = toner
                 selectedTonerDilution = toner.preferredDilution(for: paper)
+                selectedTonerTemperature = firstTemperature(
+                    for: selectedTonerDilution,
+                    chemicalManufacturer: toner.manufacturer
+                )
             } else if DarkroomCatalog.toners.contains(where: { $0.isApplicable(for: paper) }) == false {
                 isToningEnabled = false
             }
@@ -1915,6 +1998,10 @@ struct SetupView: View {
             return transferAfterStopBathSeconds
         case .afterFixer:
             return transferAfterFixerSeconds
+        case .afterWash:
+            return transferAfterWashSeconds
+        case .afterToning:
+            return transferAfterToningSeconds
         }
     }
 
@@ -1926,6 +2013,10 @@ struct SetupView: View {
             transferAfterStopBathSeconds = seconds
         case .afterFixer:
             transferAfterFixerSeconds = seconds
+        case .afterWash:
+            transferAfterWashSeconds = seconds
+        case .afterToning:
+            transferAfterToningSeconds = seconds
         }
 
         guard isTransferSynced(transfer) else {
@@ -1943,6 +2034,14 @@ struct SetupView: View {
         if isFixerTransferSynced {
             transferAfterFixerSeconds = seconds
         }
+
+        if isWashTransferSynced {
+            transferAfterWashSeconds = seconds
+        }
+
+        if isToningTransferSynced {
+            transferAfterToningSeconds = seconds
+        }
     }
 
     private func toggleSync(for transfer: TransferSyncTarget) {
@@ -1953,6 +2052,10 @@ struct SetupView: View {
             isStopBathTransferSynced.toggle()
         case .afterFixer:
             isFixerTransferSynced.toggle()
+        case .afterWash:
+            isWashTransferSynced.toggle()
+        case .afterToning:
+            isToningTransferSynced.toggle()
         }
 
         guard isTransferSynced(transfer),
@@ -1971,6 +2074,10 @@ struct SetupView: View {
             return isStopBathTransferSynced
         case .afterFixer:
             return isFixerTransferSynced
+        case .afterWash:
+            return isWashTransferSynced
+        case .afterToning:
+            return isToningTransferSynced
         }
     }
 
@@ -1985,6 +2092,14 @@ struct SetupView: View {
 
         if transfer != .afterFixer, isFixerTransferSynced {
             return transferAfterFixerSeconds
+        }
+
+        if transfer != .afterWash, isWashTransferSynced {
+            return transferAfterWashSeconds
+        }
+
+        if transfer != .afterToning, isToningTransferSynced {
+            return transferAfterToningSeconds
         }
 
         return nil
@@ -2067,6 +2182,8 @@ struct SetupView: View {
         transferAfterDeveloperSeconds = Int(session.transferAfterDeveloperDuration.rounded())
         transferAfterStopBathSeconds = Int(session.transferAfterStopBathDuration.rounded())
         transferAfterFixerSeconds = Int(session.transferAfterFixerDuration.rounded())
+        transferAfterWashSeconds = Int(session.transferAfterWashDuration.rounded())
+        transferAfterToningSeconds = Int(session.transferAfterToningDuration.rounded())
         washTemperature = session.washTemperatureCelsius
         isToningEnabled = session.isToningEnabled
         if let toner = session.toner {
@@ -2100,6 +2217,8 @@ struct SetupView: View {
             transferAfterDeveloperDuration: TimeInterval(transferAfterDeveloperSeconds),
             transferAfterStopBathDuration: TimeInterval(transferAfterStopBathSeconds),
             transferAfterFixerDuration: TimeInterval(transferAfterFixerSeconds),
+            transferAfterWashDuration: TimeInterval(transferAfterWashSeconds),
+            transferAfterToningDuration: TimeInterval(transferAfterToningSeconds),
             washTemperatureCelsius: washTemperature,
             isToningEnabled: isToningEnabled,
             toner: isToningEnabled ? selectedToner : nil,
@@ -2129,8 +2248,14 @@ struct SetupView: View {
             return .processTransferToWashDuration
         case .wash:
             return .processWashDuration
+        case .transferToToning:
+            return .processTransferToToningDuration
         case .toning:
             return .processToningDuration
+        case .transferToWashAfterToning:
+            return .processTransferToWashAfterToningDuration
+        case .washAfterToning:
+            return .processWashAfterToningDuration
         }
     }
 
@@ -2158,8 +2283,14 @@ struct SetupView: View {
             return copy.processTransferToWash
         case .wash:
             return copy.sectionWash
+        case .transferToToning:
+            return copy.processTransferToToning
         case .toning:
             return copy.sectionToning
+        case .transferToWashAfterToning:
+            return copy.processTransferToWash
+        case .washAfterToning:
+            return copy.processWashAfterToning
         }
     }
 
@@ -2194,12 +2325,13 @@ private enum SetupPicker: String, Identifiable {
     case transferAfterDeveloper
     case transferAfterStopBath
     case transferAfterFixer
+    case transferAfterWash
+    case transferAfterToning
     case washTemperature
     case toner
     case tonerDilution
     case tonerVolume
     case tonerTemperature
-    case toningDuration
     case processDeveloperDuration
     case processTransferToStopBathDuration
     case processStopBathDuration
@@ -2207,7 +2339,10 @@ private enum SetupPicker: String, Identifiable {
     case processFixerDuration
     case processTransferToWashDuration
     case processWashDuration
+    case processTransferToToningDuration
     case processToningDuration
+    case processTransferToWashAfterToningDuration
+    case processWashAfterToningDuration
 
     var id: String { rawValue }
 }
@@ -2216,6 +2351,8 @@ private enum TransferSyncTarget {
     case afterDeveloper
     case afterStopBath
     case afterFixer
+    case afterWash
+    case afterToning
 }
 
 private enum UsageSyncTarget {
@@ -3046,6 +3183,7 @@ private struct SetupOverrideIdentity: Equatable {
     var washTemperature: Double
     var tonerID: String
     var tonerDilutionID: String
+    var tonerTemperature: Double
 }
 
 #Preview {

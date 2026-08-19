@@ -186,7 +186,38 @@ final class DarkroomCatalogTests: XCTestCase {
             ),
             TimeRange(minimum: 120, maximum: 240)
         )
+        XCTAssertEqual(
+            archival.postToningWashDuration(for: ilfordPaper, waterTemperatureCelsius: 20),
+            2 * 60
+        )
+        XCTAssertEqual(
+            archival.postToningWashDuration(for: fomaPaper, waterTemperatureCelsius: 20),
+            30 * 60
+        )
         XCTAssertTrue(toner.isApplicable(for: ilfordPaper))
         XCTAssertTrue(toner.isApplicable(for: fomaPaper))
+    }
+
+    func testFomatonerSepiaUsesDatasheetBleachTime() throws {
+        let toner = try XCTUnwrap(DarkroomCatalog.chemical(id: "foma-fomatoner-sepia"))
+        let paper = try XCTUnwrap(DarkroomCatalog.paper(id: "foma-fomabrom-variant"))
+        let dilution = try XCTUnwrap(toner.dilutions.first)
+
+        XCTAssertEqual(
+            dilution.timeRange(
+                for: paper,
+                temperatureCelsius: 25,
+                chemicalManufacturer: toner.manufacturer
+            ),
+            TimeRange(minimum: 120, maximum: 180)
+        )
+        XCTAssertTrue(
+            dilution.isDocumented(
+                for: paper,
+                temperatureCelsius: 25,
+                chemicalManufacturer: toner.manufacturer
+            )
+        )
+        XCTAssertNil(dilution.postToningWashDuration(for: paper, waterTemperatureCelsius: 20))
     }
 }

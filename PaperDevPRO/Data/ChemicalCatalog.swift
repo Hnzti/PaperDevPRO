@@ -7,6 +7,13 @@ import Foundation
 enum ChemicalCatalog {
     static let all: [Chemical] = foma + ilford + kentmere
 
+    /// HARMAN Selenium TDS: after the desired tone, RC 2 min / FB ≥ 30 min
+    /// in fresh running water above 5 °C.
+    private static let harmanSeleniumPostToningWash: [PostToningWashRule] = [
+        PostToningWashRule(paperType: .resinCoated, minimumTemperatureCelsius: 5, duration: 2 * 60),
+        PostToningWashRule(paperType: .fiberBased, minimumTemperatureCelsius: 5, duration: 30 * 60)
+    ]
+
     // MARK: - Foma (dish/tray, 20 °C)
     static let foma: [Chemical] = [
         Chemical(
@@ -484,14 +491,24 @@ enum ChemicalCatalog {
             name: "Fomatoner Sepia",
             role: .toner,
             dilutions: [
-                // Dvoulázňový sulfidický tónovač (bělící roztok A + tónovací roztok B),
-                // obě složky se ředí 1+9. Doba tónování se řídí opticky (dokud nejsou
-                // vytónovány i nejtmavší partie), proto nemá pevný čas z datasheetu.
-                // Vydatnost datasheetu: 5 m² z 5 l pracovního roztoku, tj. 1,0 m²/l
-                // bez ohledu na podložku – s objemem se tedy škáluje.
+                // Two-bath sulphide toner (bleach A + toner B), both mixed 1+9.
+                // Datasheet: bleach 2–3 min at 25 °C. Bath B is visual (until the
+                // darkest areas are toned). Final wash follows the paper's wash rules.
+                // Capacity: 5 m² from 5 L working solution → 1.0 m²/L, RC and FB.
                 ChemicalDilution(
                     ratio: "1+9",
-                    timeRules: [],
+                    timeRules: [
+                        ProcessingTimeRule(
+                            paperType: .resinCoated,
+                            temperatureCelsius: 25,
+                            timeRange: TimeRange(minimum: 120, maximum: 180)
+                        ),
+                        ProcessingTimeRule(
+                            paperType: .fiberBased,
+                            temperatureCelsius: 25,
+                            timeRange: TimeRange(minimum: 120, maximum: 180)
+                        )
+                    ],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.0),
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 1.0)
@@ -875,13 +892,15 @@ enum ChemicalCatalog {
                 // Dish/tray, nominally 20 °C. Normal toning is visual — no printed time.
                 // Capacity: at least 25 sheets of 8×10" (0.051562 m²) per litre at 1+3
                 // → 1.3 m²/L, RC and FB alike.
+                // After toning: RC 2 min / FB at least 30 min in running water above 5 °C.
                 ChemicalDilution(
                     ratio: "1+3",
                     timeRules: [],
                     capacityRules: [
                         ChemicalCapacityRule(paperType: .resinCoated, squareMetersPerLiter: 1.3),
                         ChemicalCapacityRule(paperType: .fiberBased, squareMetersPerLiter: 1.3)
-                    ]
+                    ],
+                    postToningWashRules: Self.harmanSeleniumPostToningWash
                 ),
                 // Archival protection with minimal tone change: 2–4 minutes.
                 ChemicalDilution(
@@ -897,7 +916,8 @@ enum ChemicalCatalog {
                             temperatureCelsius: 20,
                             timeRange: TimeRange(minimum: 120, maximum: 240)
                         )
-                    ]
+                    ],
+                    postToningWashRules: Self.harmanSeleniumPostToningWash
                 )
             ]
         ),

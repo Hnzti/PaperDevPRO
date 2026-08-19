@@ -78,6 +78,8 @@ public enum DarkroomCatalog {
         session.transferAfterDeveloperDuration = transfer
         session.transferAfterStopBathDuration = transfer
         session.transferAfterFixerDuration = transfer
+        session.transferAfterWashDuration = transfer
+        session.transferAfterToningDuration = transfer
         return session
     }
 
