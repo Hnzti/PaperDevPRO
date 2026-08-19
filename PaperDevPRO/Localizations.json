@@ -398,6 +398,25 @@
     "ja": "低輝度",
     "zh": "低亮度"
   },
+  "keepDarkroomBrightnessAfterExit": {
+    "cs": "Ponechat jas i po ukončení aplikace",
+    "en": "Keep brightness after leaving the app",
+    "de": "Helligkeit nach App-Ende beibehalten",
+    "fr": "Conserver la luminosité après fermeture",
+    "es": "Mantener el brillo al salir de la app",
+    "it": "Mantieni la luminosità dopo l’uscita",
+    "sl": "Ohrani svetlost po zaprtju aplikacije",
+    "uk": "Залишити яскравість після виходу",
+    "sv": "Behåll ljusstyrkan efter att appen stängs",
+    "fi": "Säilytä kirkkaus sovelluksen sulkemisen jälkeen",
+    "nb": "Behold lysstyrken etter at appen avsluttes",
+    "da": "Behold lysstyrken efter at appen lukkes",
+    "sk": "Ponechať jas aj po ukončení aplikácie",
+    "ru": "Сохранять яркость после выхода",
+    "el": "Διατήρηση φωτεινότητας μετά την έξοδο",
+    "ja": "アプリ終了後も輝度を維持",
+    "zh": "退出应用后保持亮度"
+  },
   "defaultTransfer": {
     "cs": "Výchozí přendání",
     "en": "Default transfer",

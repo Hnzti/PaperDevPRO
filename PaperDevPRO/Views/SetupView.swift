@@ -2350,6 +2350,13 @@ struct SettingsSheetView: View {
                                 .foregroundStyle(DarkroomPalette.red)
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 14)
+
+                                settingsDivider
+
+                                toggleRow(
+                                    title: copy.keepDarkroomBrightnessAfterExit,
+                                    isOn: $settingsStore.keepDarkroomBrightnessAfterExit
+                                )
                             }
                         }
 

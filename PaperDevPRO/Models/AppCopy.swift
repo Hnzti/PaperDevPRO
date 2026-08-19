@@ -187,6 +187,7 @@ struct AppCopy {
     var customSize: String { t("customSize") }
     var customSizeTitle: String { t("customSizeTitle") }
     var darkroomBrightness: String { t("darkroomBrightness") }
+    var keepDarkroomBrightnessAfterExit: String { t("keepDarkroomBrightnessAfterExit") }
     var defaultTransfer: String { t("defaultTransfer") }
     var deletePreset: String { t("deletePreset") }
     var done: String { t("done") }

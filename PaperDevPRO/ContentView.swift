@@ -17,7 +17,7 @@ struct ContentView: View {
                 case .active:
                     settingsStore.applyOnAppAppear()
                 case .inactive, .background:
-                    settingsStore.restoreBrightness()
+                    settingsStore.applyOnAppDisappear()
                 @unknown default:
                     break
                 }

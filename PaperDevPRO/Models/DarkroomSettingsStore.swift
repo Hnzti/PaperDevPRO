@@ -69,6 +69,19 @@ final class DarkroomSettingsStore: ObservableObject {
         }
     }
 
+    /// When enabled with low brightness, the chosen level stays in iOS after leaving
+    /// the app. When disabled, the previous system brightness is restored on exit.
+    @Published var keepDarkroomBrightnessAfterExit: Bool {
+        didSet {
+            defaults.set(keepDarkroomBrightnessAfterExit, forKey: Keys.keepBrightnessAfterExit)
+            if keepDarkroomBrightnessAfterExit {
+                storedSystemBrightness = nil
+            } else if isDarkroomBrightnessEnabled {
+                applyBrightness()
+            }
+        }
+    }
+
     @Published var defaultTransferSeconds: Int {
         didSet { defaults.set(defaultTransferSeconds, forKey: Keys.transferSeconds) }
     }
@@ -113,6 +126,7 @@ final class DarkroomSettingsStore: ObservableObject {
         static let keepScreenOn = "settings.keepScreenOn"
         static let brightnessEnabled = "settings.darkroomBrightnessEnabled"
         static let brightness = "settings.darkroomBrightness"
+        static let keepBrightnessAfterExit = "settings.keepDarkroomBrightnessAfterExit"
         static let systemBrightness = "settings.systemBrightnessBackup"
         static let transferSeconds = "settings.defaultTransferSeconds"
         static let temperatureUnit = "settings.temperatureUnit"
@@ -130,6 +144,7 @@ final class DarkroomSettingsStore: ObservableObject {
 
         let storedBrightness = defaults.object(forKey: Keys.brightness) as? Double
         self.darkroomBrightness = min(max(storedBrightness ?? 0.2, 0.05), 1)
+        self.keepDarkroomBrightnessAfterExit = defaults.bool(forKey: Keys.keepBrightnessAfterExit)
 
         let storedTransfer = defaults.object(forKey: Keys.transferSeconds) as? Int
         self.defaultTransferSeconds = min(max(storedTransfer ?? 10, 0), 120)
@@ -167,7 +182,17 @@ final class DarkroomSettingsStore: ObservableObject {
         #if canImport(UIKit)
         UIApplication.shared.isIdleTimerDisabled = false
         #endif
-        restoreBrightness()
+        handleBrightnessOnExit()
+    }
+
+    private func handleBrightnessOnExit() {
+        #if canImport(UIKit)
+        if keepDarkroomBrightnessAfterExit {
+            storedSystemBrightness = nil
+        } else {
+            restoreBrightness()
+        }
+        #endif
     }
 
     func applyKeepScreenOn() {
@@ -179,7 +204,7 @@ final class DarkroomSettingsStore: ObservableObject {
     func applyBrightness() {
         #if canImport(UIKit)
         if isDarkroomBrightnessEnabled {
-            if storedSystemBrightness == nil {
+            if !keepDarkroomBrightnessAfterExit, storedSystemBrightness == nil {
                 storedSystemBrightness = UIScreen.main.brightness
             }
             UIScreen.main.brightness = CGFloat(darkroomBrightness)
@@ -191,6 +216,11 @@ final class DarkroomSettingsStore: ObservableObject {
 
     func restoreBrightness() {
         #if canImport(UIKit)
+        guard !keepDarkroomBrightnessAfterExit else {
+            storedSystemBrightness = nil
+            return
+        }
+
         if let storedSystemBrightness {
             UIScreen.main.brightness = storedSystemBrightness
             self.storedSystemBrightness = nil
